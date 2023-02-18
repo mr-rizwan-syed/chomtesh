@@ -4,25 +4,24 @@ CHOMTE.SH is a shell script that automates reconnaissance during penetration tes
 ## Features
 CHOMTE.SH has the following features:
 
-Gather Subdomains using subfinder: This feature allows you to gather subdomains using the subfinder tool.
-DNS Subdomain Bruteforcing using dmut: This feature enables DNS subdomain bruteforcing using the dmut tool.
-Quick Port Scan using Naabu: This feature allows for quick port scanning using the Naabu tool.
-Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
-Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
-HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
-Installation
+1. Gather Subdomains using subfinder: This feature allows you to gather subdomains using the subfinder tool.
+2. DNS Subdomain Bruteforcing using dmut: This feature enables DNS subdomain bruteforcing using the dmut tool.
+3. Quick Port Scan using Naabu: This feature allows for quick port scanning using the Naabu tool.
+4. Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
+5. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
+6. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
+
+## Installation
 To install CHOMTE.SH, follow these steps:
 
 1. Install Golang by following the instructions on this link.
-Clone the repository: git clone https://github.com/mr-rizwan-syed/chomtesh
-Change the directory: cd chomtesh
-Make the script executable: chmod +x *.sh
-Run the installation script: ./install.sh
-You can also use the following command to install CHOMTE.SH:
+2. Clone the repository: git clone https://github.com/mr-rizwan-syed/chomtesh
+3. Change the directory: `cd chomtesh`
+4. Make the script executable: `chmod +x *.sh`
+5. Run the installation script: ./install.sh
 
-curl -L https://raw.githubusercontent.com/mr-rizwan-syed/chomtesh/main/install.sh | bash
 
-Usage
+## Usage
 To use CHOMTE.SH, run the script with the following flags:
 ```
 └─# ./chomte.sh
@@ -70,7 +69,7 @@ Usage: ./chomte.sh -p projectname -i IPs-list.txt -n
 -brt or --dnsbrute: DNS Recon Bruteforce.
 -h or --help: Show help.
 
-## Example
+### Example
 Here are some example commands:
 
 ./chomte.sh -p projectname -d example.com -brt
@@ -78,8 +77,8 @@ Here are some example commands:
 ./chomte.sh -p projectname -i 127.0.0.1
 ./chomte.sh -p projectname -i IPs-list.txt -n
 
-Customization
+## Customization
 CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
 
 ## Acknowledgement
-The CHOMTE.SH project was made possible by community contributions. We acknowledge and thank all the contributors who have made this project what it is.
+The CHOMTESH project was made possible by community contributions. We acknowledge and thank all the contributors who have made this project what it is.
