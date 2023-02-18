@@ -180,7 +180,7 @@ function nmapconverter(){
     echo -e "${GREEN}[+] HTML Report Format Generated ${NC}[$sdc]"
     
     # Generating RAW Colored HTML Format
-    ls $nmapscans/nmapresult-*.nmap | xargs -I {} sh -c 'cat {} | ccze -A | ansi2html > $nmapscans/nmap_raw_colored_$(echo {} | sed -n "s/.*nmapresult-\(.*\)\.nmap/\1/p").html'
+    ls $nmapscans/*.nmap | xargs -I {} sh -c 'cat {} | ccze -A | ansi2html > {}_nmap_raw_colored.html'
     echo -e "${GREEN}[+] HTML RAW Colored Format Generated ${NC}[$sdc]"
 }
 
