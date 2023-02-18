@@ -1,5 +1,5 @@
 #!/bin/bash
-#title:         JOD-ALPHA-Dependency-Installer
+#title:         Chomtesh-Dependency-Installer
 
 
 apt install python3 -y
@@ -20,6 +20,7 @@ go install github.com/haccer/subjack@latest
 go install github.com/tomnomnom/unfurl@latest
 go install github.com/rverton/webanalyze/cmd/webanalyze@latest
 go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+go install github.com/bp0lr/dmut@latest
 
 # Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
 go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
