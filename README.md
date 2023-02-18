@@ -14,11 +14,11 @@ CHOMTE.SH has the following features:
 ## Installation
 To install CHOMTE.SH, follow these steps:
 
-1. Install Golang by following the instructions on this link.
-2. Clone the repository: git clone https://github.com/mr-rizwan-syed/chomtesh
+1. Install Golang by following the instructions on this [link](https://tzusec.com/how-to-install-golang-in-kali-linux/).
+2. Clone the repository: `git clone https://github.com/mr-rizwan-syed/chomtesh`
 3. Change the directory: `cd chomtesh`
 4. Make the script executable: `chmod +x *.sh`
-5. Run the installation script: ./install.sh
+5. Run the installation script: `./install.sh`
 
 
 ## Usage
@@ -60,9 +60,9 @@ Usage: ./chomte.sh -p projectname -i IPs-list.txt -n
 ./chomte.sh -p <ProjectName> -i <127.0.0.1> [option]
 ```
 ### Mandatory Flags
--p or --project: Specify the project name here.
--d or --domain: Specify the root domain here or a domain list.
--i or --ip: Specify the IP/CIDR/IP list here.
+- -p or --project: Specify the project name here.
+- -d or --domain: Specify the root domain here or a domain list.
+- -i or --ip: Specify the IP/CIDR/IP list here.
 
 ### Optional Flags
 -n or --nmap: Nmap scan against open ports.
@@ -71,12 +71,12 @@ Usage: ./chomte.sh -p projectname -i IPs-list.txt -n
 
 ### Example
 Here are some example commands:
-
+```
 ./chomte.sh -p projectname -d example.com -brt
 ./chomte.sh -p projectname -d Domains-list.txt
 ./chomte.sh -p projectname -i 127.0.0.1
 ./chomte.sh -p projectname -i IPs-list.txt -n
-
+```
 ## Customization
 CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
 
