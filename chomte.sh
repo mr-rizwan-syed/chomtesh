@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Scans
 #author:        R12W4N
-#version:       3.5.6
+#version:       3.5.8
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -12,6 +12,8 @@ MAGENTA=`tput setaf 5`
 CYAN=`tput setaf 6`
 NC=`tput sgr0`
 wul=`tput smul`
+
+# sed -i 's/\s\+/ /g' flags.conf
 
 subfinder_flags=$(grep '^subfinder_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dmut_flags=$(grep '^dmut_flags=' flags.conf | awk -F= '{print $2}' | xargs)
@@ -64,6 +66,7 @@ print_usage() {
   echo " Optional Flags "
   echo "    -n  | --nmap            : Nmap Scan against open ports"
   echo "    -brt | --dnsbrute       : DNS Recon Bruteforce"
+  echo "    -hpl | --hostportlist   : HTTP Probing on Host:Port List "
   echo "    -h | --help             : Show this help"
   echo ""
   echo "${NC}"
@@ -95,10 +98,11 @@ function var_checker(){
     fi
     #####################################################
 
-    if [[ ${ipscan} == true ]] || [[ ${domainscan} == true ]];then
+    if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true ]];then
 
         [[ ${domainscan} == true ]] && rundomainscan
         [[ ${ipscan} == true ]] && runipscan     
+        [[ ${hostportscan} == true ]] && iphttpx $hostportlist
 
     else
         echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d${NC}"    
@@ -108,7 +112,8 @@ function var_checker(){
 function declared_paths(){
     subdomains="Results/$project/$domain/subdomains.txt"  
      
-    if [[ ${domainscan} == true ]];then
+    if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
+        echo -e "DOMAINSCAN is $domainscan"
         dnsreconout="Results/$project/$domain/dnsrecon.txt"
         naabuout="Results/$project/$domain/naabu.csv"
         nmapscans="Results/$project/$domain/nmapscans"
@@ -117,17 +122,35 @@ function declared_paths(){
         webtech="Results/$project/$domain/webtech.csv"
         hostport="Results/$project/$domain/hostport.txt"
         ipport="Results/$project/$domain/ipport.txt"
+        urlprobed="Results/$project/$domain/urlprobed.txt"
     fi
 
     if [[ ${ipscan} == true ]];then
+        echo -e "IPSCAN is $ipscan"
         naabuout="Results/$project/naabu.csv"
         nmapscans="Results/$project/nmapscans"
         aliveip="Results/$project/aliveip.txt"
         httpxout="Results/$project/httpxout.csv"
+        webtech="Results/$project/webtech.csv"
         hostport="Results/$project/hostport.txt"
         ipport="Results/$project/ipport.txt"
-        webtech="Results/$project/webtech.csv"
+        urlprobed="Results/$project/urlprobed.txt"
     fi
+
+    if [[ ${hostportscan} == true ]] && [[ -f $hostportlist ]];then
+        echo -e "HOSTPORTSCAN is $hostportscan"
+        mkdir -p Results/$project/Domain_List
+        # Declaring New Paths for Domain List
+        naabuout="Results/$project/Domain_List/naabu.csv"
+        nmapscans="Results/$project/Domain_List/nmapscans"
+        aliveip="Results/$project/Domain_List/aliveip.txt"
+        httpxout="Results/$project/Domain_List/httpxout.csv"
+        webtech="Results/$project/Domain_List/webtech.csv"
+        hostport="Results/$project/Domain_List/hostport.txt"
+        ipport="Results/$project/Domain_List/ipport.txt"
+        urlprobed="Results/$project/Domain_List/urlprobed.txt"
+    fi
+
 }
 
 ####################################################################
@@ -176,7 +199,7 @@ function nmapconverter(){
     echo -e "${GREEN}[+] Merged Nmap CSV Generated $nmapscans/Nmap_Final_Merged.csv${NC}[$sdc]"
 
     # Generating HTML Report Format
-    ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html MISC/nmap-bootstrap.xsl {} 
+    ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html MISC/nmap-bootstrap.xsl {}
     echo -e "${GREEN}[+] HTML Report Format Generated ${NC}[$sdc]"
     
     # Generating RAW Colored HTML Format
@@ -220,7 +243,7 @@ function portscanner(){
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
-                cat $naabuout | cut -d ',' -f 2 | grep -v ip | anew $aliveip &>/dev/null
+                csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q
                 csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport &>/dev/null
                 csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport &>/dev/null
                 echo -e ${GREEN}"[+]Quick Port Scan Completed$naabuout" ${NC}
@@ -240,7 +263,7 @@ function portscanner(){
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
-                cat $naabuout | cut -d ',' -f 2 | grep -v ip | anew $aliveip
+                cat $naabuout | cut -d ',' -f 2 | grep -v ip | anew $aliveip -q
                 csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport
                 echo -e ${GREEN}"[+]Quick Port Scan Completed$naabuout" ${NC}
                 if [[ $nmap == "true" ]];then
@@ -251,7 +274,6 @@ function portscanner(){
                     nmapconverter
                 fi
 	        fi
-            
             mkdir -p $nmapscans
         fi    
 
@@ -261,37 +283,41 @@ function iphttpx(){
 
     webtechcheck(){
         webanalyze -update
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | tee $webtech   
+        echo -e "[${BLUE}I${NC}]webanalyze -hosts $urlprobed $webanalyze_flags -output csv | tee $webtech  ${NC}" 
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | tee $webtech
     }
 
-    if [ -f "$naabuout" ]; then
-        if [ -f "$1" ]; then
-            if [ ! -f $httpxout ]; then
-                echo -e "[${YELLOW}*${NC}] HTTPX Probe Started\n${NC}"
-                echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-                cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-                csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-                echo -e "[${GREEN}I${NC}] HTTPX Probe Completed\n${NC}"
-                echo -e "[${GREEN}I${NC}] Running WebTechCheck\n${NC}" 
-                webtechcheck
-            else
-                echo -e "$httpxout exist"
-            fi
+    if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
+        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+        echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+        cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+        csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
+        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
+        webtechcheck
      
-        elif ! [ -f "$1" ]; then
-            if [ ! -f $httpxout ]; then
-                cat $naabuout | cut -d ',' -f 2 | grep -v 'ip' | sort -u | anew $aliveip
-                echo "cat $1 | httpx $httpx_flags -csv -o $httpxout"
-                cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-                csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
-                webtechcheck
-            else
-                echo -e "$httpxout exist"
-            fi
-        fi
+    elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
+        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+        echo "${BLUE}echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+        echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+        csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
+        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
+        webtechcheck
+        
+    elif [ ${hostportscan} == true ] && [ -f $1 ]; then
+        declared_paths
+        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+        echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+        cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+        csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
+        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
+        webtechcheck
+  
     else
-        echo $naabuout
-        ColorRed "Need to scan port"
+        echo $1
+        echo -e "Need to scan port"
     fi
 }    
 
@@ -307,14 +333,8 @@ function rundomainscan(){
         iphttpx $hostport
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
         echo -e "Domain Module $domain $domainscan - List Specified"
-        mkdir -p Results/$project/Domain_List
-        # Declaring New Paths for Domain List
-        naabuout="Results/$project/Domain_List/naabu.csv"
-        nmapscans="Results/$project/Domain_List/nmapscans"
-        aliveip="Results/$project/Domain_List/aliveip.txt"
-        httpxout="Results/$project/Domain_List/httpxout.csv"
-        hostport="Results/$project/Domain_List/hostport.txt"
-        ipport="Results/$project/Domain_List/ipport.txt"
+        hostportscan=true
+        declared_paths
         # Running Functions
         portscanner $domain
         iphttpx $hostport
@@ -366,6 +386,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     -naabu|--portscan)
       portscan=true
+      shift 
+      ;;
+    -hpl|--hostportlist)
+      hostportlist="$2"
+      hostportscan=true
       shift 
       ;;
     -*|--*)
