@@ -21,7 +21,7 @@ naabu_flags=$(grep '^naabu_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 httpx_flags=$(grep '^httpx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 webanalyze_flags=$(grep '^webanalyze_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 nmap_flags=$(grep '^nmap_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-
+dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 
 banner(){
 echo ${GREEN} '
@@ -123,6 +123,7 @@ function declared_paths(){
         hostport="Results/$project/$domain/hostport.txt"
         ipport="Results/$project/$domain/ipport.txt"
         urlprobed="Results/$project/$domain/urlprobed.txt"
+        enum="Results/$project/$domain/enum"
     fi
 
     if [[ ${ipscan} == true ]];then
@@ -137,7 +138,7 @@ function declared_paths(){
         urlprobed="Results/$project/urlprobed.txt"
     fi
 
-    if [[ ${hostportscan} == true ]] && [[ -f $hostportlist ]];then
+    if [[ ${hostportscan} == true ]] || [[ ${domainlist} == true ]] && [[ -f $hostportlist ]] || [[ -f $domain ]];then
         echo -e "HOSTPORTSCAN is $hostportscan"
         mkdir -p Results/$project/Domain_List
         # Declaring New Paths for Domain List
@@ -225,6 +226,7 @@ function portscanner(){
         }    
         
         # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
+        
         if [ -f "$naabuout" ]; then
             csvcut -c ip $naabuout | grep -v ip | anew $aliveip
             if [[ $nmap == "true" ]];then
@@ -287,37 +289,42 @@ function iphttpx(){
         webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | tee $webtech
     }
 
-    if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
-        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-        echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-        cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-        csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
-        webtechcheck
-     
-    elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
-        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-        echo "${BLUE}echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-        echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-        csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
-        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
-        webtechcheck
+    if [ ! -f "$httpxout" ]; then
+        echo "The file $httpxout does not exist. Running command..."
         
-    elif [ ${hostportscan} == true ] && [ -f $1 ]; then
-        declared_paths
-        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-        echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-        cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-        csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
-        webtechcheck
-  
+        if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
+            echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+            echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+            cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
+            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+            echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
+            webtechcheck
+     
+        elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
+            echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+            echo "${BLUE}echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+            echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
+            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+            echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
+            webtechcheck
+            
+        elif [ ${hostportscan} == true ] && [ -f $1 ]; then
+            declared_paths
+            echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+            echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+            cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
+            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+            echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
+            webtechcheck
+        else
+            echo $1
+            echo -e "Need to scan port"
+        fi
     else
-        echo $1
-        echo -e "Need to scan port"
+        echo "The file $httpxout already exists. Skipping command..."
     fi
 }    
 
@@ -333,9 +340,13 @@ function rundomainscan(){
         iphttpx $hostport
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
         echo -e "Domain Module $domain $domainscan - List Specified"
-        hostportscan=true
+        domainlist=true
         declared_paths
         # Running Functions
+        echo $domain
+        echo $naabuout
+        echo $nmapscans
+        echo $hostport
         portscanner $domain
         iphttpx $hostport
     else
@@ -353,6 +364,12 @@ function runipscan(){
         echo -e "${RED}[-] IP not specified.. Check -i again${NC}"
     fi
 }
+
+function content_discovery(){
+    [[ -f $1 ]] && cat $1 | dirsearch.py --stdin $dirsearch_flags --format csv -o $enum/dirsearch_results.csv
+    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enum/$1_dirsearch.csv
+}
+
 #######################################################################
 
 while [[ $# -gt 0 ]]; do
