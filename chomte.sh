@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Scans
 #author:        R12W4N
-#version:       3.5.8
+#version:       3.5.9
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -86,6 +86,7 @@ domaindirectorycheck(){
 }
 
 function var_checker(){
+    toolchecker
     echo -e "${BLUE}[*] Checking for required arguments...${NC}"
 
 	if [[ -z ${project} ]]; then
@@ -123,7 +124,7 @@ function declared_paths(){
         hostport="Results/$project/$domain/hostport.txt"
         ipport="Results/$project/$domain/ipport.txt"
         urlprobed="Results/$project/$domain/urlprobed.txt"
-        enum="Results/$project/$domain/enum"
+        enumscan="Results/$project/$domain/enumscan"
     fi
 
     if [[ ${ipscan} == true ]];then
@@ -216,7 +217,7 @@ function portscanner(){
             then
                 echo -e "No Ports found for $iphost"
             else
-                echo -e ${CYAN}"[*] Running Nmap Scan on"${NC} $iphost ======${CYAN} $ports ${NC}
+                echo -e ${CYAN}"[$] Running Nmap Scan on"${NC} $iphost ======${CYAN} $ports ${NC}
                 if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
                     echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
                 else
@@ -230,7 +231,7 @@ function portscanner(){
         if [ -f "$naabuout" ]; then
             csvcut -c ip $naabuout | grep -v ip | anew $aliveip
             if [[ $nmap == "true" ]];then
-                echo -e ${YELLOW}"[*]Running Nmap Service Enumeration Scan" ${NC}
+                echo -e ${YELLOW}"[*] Running Nmap Service Enumeration Scan" ${NC}
                 mkdir -p $nmapscans
                 while read iphost; do
                     scanner  
@@ -248,7 +249,7 @@ function portscanner(){
                 csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q
                 csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport &>/dev/null
                 csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport &>/dev/null
-                echo -e ${GREEN}"[+]Quick Port Scan Completed$naabuout" ${NC}
+                echo -e ${GREEN}"[+]Quick Port Scan Completed $naabuout" ${NC}
                 if [[ $nmap == "true" ]];then
                     mkdir -p $nmapscans
                     echo -e ${YELLOW}"[*] Running Nmap Scan"${NC}
@@ -338,15 +339,16 @@ function rundomainscan(){
         dnsreconbrute
         portscanner $subdomains
         iphttpx $hostport
+        if [[ ${enum} == true ]];then
+            mkdir -p $enumscan
+            content_discovery $urlprobed
+            # activescan $httpxout
+        fi
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
         echo -e "Domain Module $domain $domainscan - List Specified"
         domainlist=true
         declared_paths
         # Running Functions
-        echo $domain
-        echo $naabuout
-        echo $nmapscans
-        echo $hostport
         portscanner $domain
         iphttpx $hostport
     else
@@ -366,12 +368,22 @@ function runipscan(){
 }
 
 function content_discovery(){
-    [[ -f $1 ]] && cat $1 | dirsearch.py --stdin $dirsearch_flags --format csv -o $enum/dirsearch_results.csv
-    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enum/$1_dirsearch.csv
+    [[ -f $1 ]] && cat $1 | dirsearch.py --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv
+    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv
 }
 
 #######################################################################
+function toolchecker(){
+    required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew")
 
+    for tool in "${required_tools[@]}"; do
+        if ! command -v "$tool" &> /dev/null; then
+            echo "$tool is not installed"
+            exit 1
+        fi
+    done
+}
+#########################################################################
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
@@ -408,6 +420,10 @@ while [[ $# -gt 0 ]]; do
     -hpl|--hostportlist)
       hostportlist="$2"
       hostportscan=true
+      shift 
+      ;;
+    -e|--enum)
+      enum=true
       shift 
       ;;
     -*|--*)
