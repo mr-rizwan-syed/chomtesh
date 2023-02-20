@@ -60,14 +60,16 @@ print_usage() {
   echo "Usage: ./chomte.sh -p projectname -i IPs-list.txt -n"
   echo "${NC}"
   echo "  Mandatory Flags:"
-  echo "    -p  | --project         : Specify Project Name here"
-  echo "    -d  | --domain          : Specify Root Domain here / Domain List here"
-  echo "    -i  | --ip              : Specify IP / CIDR/ IPlist here"
+  echo "    -p   | --project         : Specify Project Name here"
+  echo "    -d   | --domain          : Specify Root Domain here / Domain List here"
+  echo "    -i   | --ip              : Specify IP / CIDR/ IPlist here"
   echo " Optional Flags "
-  echo "    -n  | --nmap            : Nmap Scan against open ports"
-  echo "    -brt | --dnsbrute       : DNS Recon Bruteforce"
-  echo "    -hpl | --hostportlist   : HTTP Probing on Host:Port List "
-  echo "    -h | --help             : Show this help"
+  echo "    -n   | --nmap            : Nmap Scan against open ports"
+  echo "    -brt | --dnsbrute        : DNS Recon Bruteforce"
+  echo "    -hpl | --hostportlist    : HTTP Probing on Host:Port List "
+  echo "    -e   | --enum            : Active Recon "
+  echo "    -jsd | --jsubfinder      : Get Subdomains from WebPage and JS file by crawling "
+  echo "    -h   | --help            : Show this help"
   echo ""
   echo "${NC}"
   exit
@@ -85,8 +87,21 @@ domaindirectorycheck(){
     
 }
 
+
+required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew")
+missing_tools=()
+for tool in "${required_tools[@]}"; do
+    if ! command -v "$tool" &> /dev/null; then
+        missing_tools+=("$tool")
+    fi
+done
+if [ ${#missing_tools[@]} -ne 0 ]; then
+    echo -e ""
+    echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
+    exit 1
+fi
 function var_checker(){
-    toolchecker
+    
     echo -e "${BLUE}[*] Checking for required arguments...${NC}"
 
 	if [[ -z ${project} ]]; then
@@ -124,7 +139,9 @@ function declared_paths(){
         hostport="Results/$project/$domain/hostport.txt"
         ipport="Results/$project/$domain/ipport.txt"
         urlprobed="Results/$project/$domain/urlprobed.txt"
-        enumscan="Results/$project/$domain/enumscan"
+        potentialsd="Results/$project/$domain/potentialsd.txt"
+        enumscan="$PWD/Results/$project/$domain/enumscan"
+        jsubfinderout="Results/$project/$domain/jsubfinder.txt"
     fi
 
     if [[ ${ipscan} == true ]];then
@@ -137,6 +154,7 @@ function declared_paths(){
         hostport="Results/$project/hostport.txt"
         ipport="Results/$project/ipport.txt"
         urlprobed="Results/$project/urlprobed.txt"
+        potentialsd="Results/$project/potentialsd.txt"
     fi
 
     if [[ ${hostportscan} == true ]] || [[ ${domainlist} == true ]] && [[ -f $hostportlist ]] || [[ -f $domain ]];then
@@ -151,6 +169,7 @@ function declared_paths(){
         hostport="Results/$project/Domain_List/hostport.txt"
         ipport="Results/$project/Domain_List/ipport.txt"
         urlprobed="Results/$project/Domain_List/urlprobed.txt"
+        potentialsd="Results/$project/Domain_List/potentialsd.txt"
     fi
 
 }
@@ -186,6 +205,19 @@ function getsubdomains(){
         subfinder -d $1 | anew $subdomains
         sdc=$(<$subdomains wc -l)
         echo -e "${GREEN}[+] Subdomains Collected ${NC}[$sdc]"
+        
+        runjsubfinder(){
+            echo -e ""
+            echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
+            echo -e "${BLUE}cat $subdomains | xargs -I {} sh -c 'echo {} | jsubfinder search --crawl -t 20 -K | anew $jsubfinderout'${NC}"
+            echo -e ""
+            cat $subdomains | xargs -I {} sh -c 'echo {} | jsubfinder search --crawl -t 20 -K | anew $jsubfinderout'
+            dnsbrute_sdc=$(cat $jsubfinderout | anew $subdomains | wc -l)
+            total_sdc=$(cat $subdomains | wc -l)
+            echo -e "${GREEN}[+] Subdomains Collected ${NC}[$total_sdc]"
+        }
+
+        [ "$jsd" = true ] && runjsubfinder
     fi
 }
 
@@ -285,8 +317,9 @@ function portscanner(){
 function iphttpx(){
 
     webtechcheck(){
-        webanalyze -update
-        echo -e "[${BLUE}I${NC}]webanalyze -hosts $urlprobed $webanalyze_flags -output csv | tee $webtech  ${NC}" 
+        webanalyze -update > /dev/null
+        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
+        echo -e "${BLUE}webanalyze -hosts $urlprobed $webanalyze_flags -output csv | tee $webtech  ${NC}" 
         webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | tee $webtech
     }
 
@@ -298,8 +331,9 @@ function iphttpx(){
             echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-            echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
+            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | sort -u | sort -u | anew $potentialsd
+            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsd
+            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}" 
             webtechcheck
      
         elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
@@ -307,8 +341,9 @@ function iphttpx(){
             echo "${BLUE}echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
+            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | sort -u | sort -u | anew $potentialsd
+            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsd
             echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-            echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
             webtechcheck
             
         elif [ ${hostportscan} == true ] && [ -f $1 ]; then
@@ -317,8 +352,9 @@ function iphttpx(){
             echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
+            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | sort -u | sort -u | anew $potentialsd
+            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsd
             echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-            echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
             webtechcheck
         else
             echo $1
@@ -339,9 +375,9 @@ function rundomainscan(){
         dnsreconbrute
         portscanner $subdomains
         iphttpx $hostport
-        if [[ ${enum} == true ]];then
+        if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
-            content_discovery $urlprobed
+            [[ ${cdlist} ]] && content_discovery $cdlist || echo -e "Please specify something URL / List of URLs for Content Discovery"
             # activescan $httpxout
         fi
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
@@ -368,21 +404,12 @@ function runipscan(){
 }
 
 function content_discovery(){
-    [[ -f $1 ]] && cat $1 | dirsearch.py --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv
-    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv
+    [[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
+    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
 }
 
 #######################################################################
-function toolchecker(){
-    required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew")
 
-    for tool in "${required_tools[@]}"; do
-        if ! command -v "$tool" &> /dev/null; then
-            echo "$tool is not installed"
-            exit 1
-        fi
-    done
-}
 #########################################################################
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -422,9 +449,18 @@ while [[ $# -gt 0 ]]; do
       hostportscan=true
       shift 
       ;;
+    -cd|--content)
+      cdlist="$2"
+      contentscan=true
+      shift
+      ;;
     -e|--enum)
       enum=true
-      shift 
+      shift
+      ;;
+    -jsd|--jsubfinder)
+      jsd=true
+      shift
       ;;
     -*|--*)
       echo "Unknown option $1"
