@@ -21,8 +21,10 @@ go install github.com/tomnomnom/unfurl@latest
 go install github.com/rverton/webanalyze/cmd/webanalyze@latest
 go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
 go install github.com/bp0lr/dmut@latest
+go install github.com/ThreatUnkown/jsubfinder@latest
+wget https://raw.githubusercontent.com/ThreatUnkown/jsubfinder/master/.jsf_signatures.yaml && mv .jsf_signatures.yaml ~/.jsf_signatures.yaml
 
-# Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
+# If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
 go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 
 
