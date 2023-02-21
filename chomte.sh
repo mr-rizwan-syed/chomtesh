@@ -135,6 +135,7 @@ function declared_paths(){
         nmapscans="Results/$project/$domain/nmapscans"
         aliveip="Results/$project/$domain/aliveip.txt"
         httpxout="Results/$project/$domain/httpxout.csv"
+        httpxresume="Results/$project/$domain/httpxresume.cfg"
         webtech="Results/$project/$domain/webtech.csv"
         hostport="Results/$project/$domain/hostport.txt"
         ipport="Results/$project/$domain/ipport.txt"
@@ -155,6 +156,7 @@ function declared_paths(){
         ipport="Results/$project/ipport.txt"
         urlprobed="Results/$project/urlprobed.txt"
         potentialsd="Results/$project/potentialsd.txt"
+        enumscan="$PWD/Results/$project/enumscan"
     fi
 
     if [[ ${hostportscan} == true ]] || [[ ${domainlist} == true ]] && [[ -f $hostportlist ]] || [[ -f $domain ]];then
@@ -170,6 +172,7 @@ function declared_paths(){
         ipport="Results/$project/Domain_List/ipport.txt"
         urlprobed="Results/$project/Domain_List/urlprobed.txt"
         potentialsd="Results/$project/Domain_List/potentialsd.txt"
+        enumscan="$PWD/Results/$project/Domain_List/enumscan"
     fi
 
 }
@@ -365,6 +368,41 @@ function iphttpx(){
     fi
 }    
 
+function content_discovery(){
+    [[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
+    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
+}
+
+function active_recon(){
+    
+    techdetect(){
+        urls=($(csvcut -c url,tech $httpxout | grep $1 | cut -d ',' -f 1))
+        urls+=($(csvcut -c Host,Category,App $webtech | grep $1 | cut -d ',' -f 1))
+        result=$(printf "%s\n" "${urls[@]}")
+        for url in $result; do
+            echo $url
+        done
+    }
+
+    wordpress_recon(){
+        techdetect wordpress | anew $enumscan/wordpress_urls.txt
+        if [ -s $enumscan/wordpress_urls.txt ];then
+            nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wp_nuclei_results.txt
+            # wpscan with apitoken
+        fi
+    }
+
+    iis_recon(){
+        techdetect IIS | anew $enumscan/iis_urls.txt -q
+        if [ -s $enumscan/iis_urls.txt ];then
+            nuclei -l $enumscan/iis_urls.txt -tags iis
+        fi
+    }
+
+    wordpress_recon
+    iis_recon
+
+}
 ####################################################################
 function rundomainscan(){
     if [ -n "${domain}" ] && [ ! -f "${domain}" ];then
@@ -378,6 +416,11 @@ function rundomainscan(){
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
             [[ ${cdlist} ]] && content_discovery $cdlist || echo -e "Please specify something URL / List of URLs for Content Discovery"
+            
+        fi
+        if [[ ${enum} == true ]];then
+            mkdir -p $enumscan
+            [[ ${httpxout} ]] && active_recon
             # activescan $httpxout
         fi
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
@@ -403,10 +446,6 @@ function runipscan(){
     fi
 }
 
-function content_discovery(){
-    [[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
-    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
-}
 
 #######################################################################
 
