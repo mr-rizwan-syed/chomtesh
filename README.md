@@ -80,5 +80,9 @@ Here are some example commands:
 ## Customization
 CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
 
+## Contributions
+Contributions and pull requests are highly encouraged for this project.
+
+
 ## Acknowledgement
 The CHOMTESH project was made possible by community contributions. We acknowledge and thank all the contributors who have made this project what it is.
