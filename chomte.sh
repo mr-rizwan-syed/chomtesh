@@ -334,8 +334,8 @@ function iphttpx(){
             echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | sort -u | sort -u | anew $potentialsd
-            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsd
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsd
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsd
             echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}" 
             webtechcheck
      
@@ -376,8 +376,8 @@ function content_discovery(){
 function active_recon(){
     
     techdetect(){
-        urls=($(csvcut -c url,tech $httpxout | grep $1 | cut -d ',' -f 1))
-        urls+=($(csvcut -c Host,Category,App $webtech | grep $1 | cut -d ',' -f 1))
+        urls=($(csvcut -c url,tech $httpxout | grep -i $1 | cut -d ',' -f 1))
+        urls+=($(csvcut -c Host,Category,App $webtech | grep -i $1 | cut -d ',' -f 1))
         result=$(printf "%s\n" "${urls[@]}")
         for url in $result; do
             echo $url
@@ -385,7 +385,7 @@ function active_recon(){
     }
 
     wordpress_recon(){
-        techdetect wordpress | anew $enumscan/wordpress_urls.txt
+        techdetect WordPress | anew $enumscan/wordpress_urls.txt -q
         if [ -s $enumscan/wordpress_urls.txt ];then
             nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wp_nuclei_results.txt
             # wpscan with apitoken
@@ -399,8 +399,16 @@ function active_recon(){
         fi
     }
 
+    drupal_recon(){
+        techdetect Drupal | anew $enumscan/drupal_urls.txt -q
+        if [ -s $enumscan/drupal_urls.txt ];then
+            nuclei -l $enumscan/drupal_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/drupal_urls.txt
+        fi
+    }
+
     wordpress_recon
     iis_recon
+    drupal_recon
 
 }
 ####################################################################
@@ -415,8 +423,7 @@ function rundomainscan(){
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
-            [[ ${cdlist} ]] && content_discovery $cdlist || echo -e "Please specify something URL / List of URLs for Content Discovery"
-            
+            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsd
         fi
         if [[ ${enum} == true ]];then
             mkdir -p $enumscan
