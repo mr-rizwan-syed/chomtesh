@@ -1,6 +1,8 @@
 # CHOMTE.SH
 CHOMTE.SH is a shell script that automates reconnaissance during penetration testing by utilizing Go-based tools. It can be useful for bug bounty and penetration testing (internal/external) to identify the attack surface. The script has a simple and modular code base, making it easy to contribute, and fast with fully configurable flags to probe multiple elements.
 
+![alt text](https://i.imgur.com/CGIuS5z.png)
+
 ## Features
 CHOMTE.SH has the following features:
 
