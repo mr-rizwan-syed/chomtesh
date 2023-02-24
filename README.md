@@ -1,4 +1,16 @@
-# CHOMTE.SH
+<h1 align="center">
+  <a name="logo" href=".png" alt="Bear Stone Smart Home" width="200"></a>
+  <br>
+  CHOMTE.SH
+</h1>
+<h4 align="center">Be sure to :star: my configuration repo so you can keep up to date on any daily progress!</h4>
+<p align="center"><a align="center" target="_blank" alt="Recent Commits to Bear Stone Smart Home" style="border:0"></a></p>
+<div align="center">
+
+[![Twitter Follow](https://img.shields.io/twitter/follow/ccostan?color=blue&amp;label=tweet&amp;logo=twitter&amp;style=for-the-badge)](https://twitter.com/_r12w4n)
+[![YouTube Subscribe](https://img.shields.io/youtube/channel/subscribers/UC301G8JJFzY0BZ_0lshpKpQ?label=YouTube&logo=Youtube&logoColor=%23DF5D44&style=for-the-badge)](https://www.youtube.com/@r12w4n7?sub_confirmation=1)
+[![GitHub Follow](https://img.shields.io/github/stars/mr-rizwan-syed/chomtesh?label=sTARS&amp;logo=Github&amp;style=for-the-badge)](https://github.com/chomtesh)
+
 CHOMTE.SH is a shell script that automates reconnaissance during penetration testing by utilizing Go-based tools. It can be useful for bug bounty and penetration testing (internal/external) to identify the attack surface. The script has a simple and modular code base, making it easy to contribute, and fast with fully configurable flags to probe multiple elements.
 
 ![alt text](https://i.imgur.com/CGIuS5z.png)
