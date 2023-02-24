@@ -14,18 +14,17 @@ CHOMTE.SH has the following features:
 ## Installation
 To install CHOMTE.SH, follow these steps:
 
-1. Install Golang by following the instructions on this [link](https://tzusec.com/how-to-install-golang-in-kali-linux/).
+1. Install Golang by following the instructions on this [Go Setup](https://tzusec.com/how-to-install-golang-in-kali-linux/).
 2. Clone the repository: `git clone https://github.com/mr-rizwan-syed/chomtesh`
 3. Change the directory: `cd chomtesh`
 4. Make the script executable: `chmod +x *.sh`
 5. Run the installation script: `./install.sh`
-
+6. Run Chomte.sh: `./chomte.sh`
 
 ## Usage
 To use CHOMTE.SH, run the script with the following flags:
 ```
 └─# ./chomte.sh
-
 
  ██████╗██╗  ██╗ ██████╗ ███╗   ███╗████████╗███████╗   ███████╗██╗  ██╗
 ██╔════╝██║  ██║██╔═══██╗████╗ ████║╚══██╔══╝██╔════╝   ██╔════╝██║  ██║
@@ -46,13 +45,16 @@ Usage: ./chomte.sh -p projectname -i 127.0.0.1
 Usage: ./chomte.sh -p projectname -i IPs-list.txt -n
 
   Mandatory Flags:
-    -p  | --project         : Specify Project Name here
-    -d  | --domain          : Specify Root Domain here / Domain List here
-    -i  | --ip              : Specify IP / CIDR/ IPlist here
+    -p   | --project         : Specify Project Name here
+    -d   | --domain          : Specify Root Domain here / Domain List here
+    -i   | --ip              : Specify IP / CIDR/ IPlist here
  Optional Flags
-    -n  | --nmap            : Nmap Scan against open ports
-    -brt | --dnsbrute       : DNS Recon Bruteforce
-    -h | --help             : Show this help
+    -n   | --nmap            : Nmap Scan against open ports
+    -brt | --dnsbrute        : DNS Recon Bruteforce
+    -hpl | --hostportlist    : HTTP Probing on Host:Port List
+    -e   | --enum            : Active Recon
+    -jsd | --jsubfinder      : Get Subdomains from WebPage and JS file by crawling
+    -h   | --help            : Show this help
 ```
 
 ```
@@ -65,20 +67,29 @@ Usage: ./chomte.sh -p projectname -i IPs-list.txt -n
 - -i or --ip: Specify the IP/CIDR/IP list here.
 
 ### Optional Flags
--n or --nmap: Nmap scan against open ports.
--brt or --dnsbrute: DNS Recon Bruteforce.
--h or --help: Show help.
+-n or --nmap                  : Nmap scan against open ports.
+-brt or --dnsbrute            : DNS Recon Bruteforce.
+-hpl or --hostportlist <path> : HTTP Probing on Host:Port List
+-cd or --content <path>       : Content Discovery - Path is optional
+-e or --enum                  : Active Enum based on technologies
+-h or --help                  : Show help.
 
 ### Example
 Here are some example commands:
 ```
+./chomte.sh -p projectname -d example.com
 ./chomte.sh -p projectname -d example.com -brt
+./chomte.sh -p projectname -d example.com -n -cd -e
 ./chomte.sh -p projectname -d Domains-list.txt
 ./chomte.sh -p projectname -i 127.0.0.1
+./chomte.sh -p projectname -i 192.168.10.0/24
 ./chomte.sh -p projectname -i IPs-list.txt -n
 ```
+
 ## Customization
-CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
+- CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
+- Add API keys to subfinder ~/.config/subfinder/provider-config.yaml [Subfinder API Keys](https://github.com/projectdiscovery/subfinder#post-installation-instructions).
+- 
 
 ## Contributions
 Contributions and pull requests are highly encouraged for this project.
