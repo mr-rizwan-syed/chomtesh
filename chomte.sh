@@ -140,7 +140,8 @@ function declared_paths(){
         hostport="Results/$project/$domain/hostport.txt"
         ipport="Results/$project/$domain/ipport.txt"
         urlprobed="Results/$project/$domain/urlprobed.txt"
-        potentialsd="Results/$project/$domain/potentialsd.txt"
+        potentialsdurls="Results/$project/$domain/potentialsdurls.txt"
+        urlprobedsd="Results/$project/$domain/urlprobedsd.txt"
         enumscan="$PWD/Results/$project/$domain/enumscan"
         jsubfinderout="Results/$project/$domain/jsubfinder.txt"
     fi
@@ -155,7 +156,8 @@ function declared_paths(){
         hostport="Results/$project/hostport.txt"
         ipport="Results/$project/ipport.txt"
         urlprobed="Results/$project/urlprobed.txt"
-        potentialsd="Results/$project/potentialsd.txt"
+        potentialsdurls="Results/$project/potentialsdurls.txt"
+        urlprobedsd="Results/$project/urlprobedsd.txt"
         enumscan="$PWD/Results/$project/enumscan"
     fi
 
@@ -171,7 +173,8 @@ function declared_paths(){
         hostport="Results/$project/Domain_List/hostport.txt"
         ipport="Results/$project/Domain_List/ipport.txt"
         urlprobed="Results/$project/Domain_List/urlprobed.txt"
-        potentialsd="Results/$project/Domain_List/potentialsd.txt"
+        potentialsdurls="Results/$project/Domain_List/potentialsdurls.txt"
+        urlprobedsd="Results/$project/Domain_List/urlprobedsd.txt"
         enumscan="$PWD/Results/$project/Domain_List/enumscan"
     fi
 
@@ -334,9 +337,9 @@ function iphttpx(){
             echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsd
-            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsd
-            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}" 
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsdurls
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsdurls
+            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
             webtechcheck
      
         elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
@@ -344,8 +347,8 @@ function iphttpx(){
             echo "${BLUE}echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
-            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | sort -u | sort -u | anew $potentialsd
-            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsd
+            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | anew $potentialsdurls
+            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsdurls
             echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
             webtechcheck
             
@@ -355,8 +358,8 @@ function iphttpx(){
             echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
             csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | sort -u | sort -u | anew $potentialsd
-            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsd
+            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | anew $potentialsdurls
+            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsdurls
             echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
             webtechcheck
         else
@@ -387,30 +390,40 @@ function active_recon(){
     wordpress_recon(){
         techdetect WordPress | anew $enumscan/wordpress_urls.txt -q
         if [ -s $enumscan/wordpress_urls.txt ];then
-            nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wp_nuclei_results.txt
+            nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wordpress_nuclei_results.txt
             # wpscan with apitoken
         fi
     }
 
-    iis_recon(){
-        techdetect IIS | anew $enumscan/iis_urls.txt -q
-        if [ -s $enumscan/iis_urls.txt ];then
-            nuclei -l $enumscan/iis_urls.txt -tags iis
+    joomla_recon(){
+        techdetect joomla | anew $enumscan/joomla_urls.txt -q
+        if [ -s $enumscan/joomla_urls.txt ];then
+            nuclei -l $enumscan/joomla_urls.txt -w ~/nuclei-templates/workflows/joomla-workflow.yaml -o $enumscan/joomla_nuclei_results.txt
         fi
     }
 
     drupal_recon(){
         techdetect Drupal | anew $enumscan/drupal_urls.txt -q
         if [ -s $enumscan/drupal_urls.txt ];then
-            nuclei -l $enumscan/drupal_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/drupal_urls.txt
+            nuclei -l $enumscan/drupal_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/drupal_nuclei_results.txt
         fi
     }
 
     wordpress_recon
-    iis_recon
+    joomla_recon
     drupal_recon
 
+    cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd
+    interlace -tL $urlprobedsd -o $enumscan -cL MISC/passive_recon.il
+    katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/live_jsfile_links.txt
+    #LinkFinder.py
+    #SecretFinder.py
+    #getjswords.py
+    #jsvar.sh
+    #findomxss.sh
 }
+
+
 ####################################################################
 function rundomainscan(){
     if [ -n "${domain}" ] && [ ! -f "${domain}" ];then
@@ -423,7 +436,7 @@ function rundomainscan(){
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
-            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsd
+            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
         fi
         if [[ ${enum} == true ]];then
             mkdir -p $enumscan
