@@ -48,7 +48,7 @@ dependency_installer(){
 
     if ! command_exists csvcut; then
         echo "Installing csvkit"
-        pip install csvkit -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: csvkit"
+        apt install csvkit -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: csvkit"
     fi
 
     if ! command_exists subfinder; then
@@ -128,7 +128,10 @@ dependency_installer(){
     if ! command_exists naabu; then
         echo "Installing naabu"
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
-        go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
+        # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
+        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.2/naabu_2.1.2_linux_amd64.zip -P /opt/tools/naabu
+        unzip /opt/tools/naabu/naabu_2.1.2_linux_amd64.zip -d /opt/tools/naabu
+        mv /opt/tools/naabu/naabu /usr/local/bin
     fi
 
     if ! command_exists interlace; then
@@ -140,6 +143,10 @@ dependency_installer(){
         echo -e "\n-----------------------FINISHED INSTALLING INTERLACE------------------------"
     fi  
 
+    if ! command_exists ansi2html; then
+        pip3 install ansi2html
+    fi
+    
     if ! command_exists subjs; then
         go install -v github.com/lc/subjs@latest
     fi
