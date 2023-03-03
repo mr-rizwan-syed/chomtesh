@@ -324,8 +324,8 @@ function iphttpx(){
     webtechcheck(){
         webanalyze -update > /dev/null
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
-        echo -e "${BLUE}webanalyze -hosts $urlprobed $webanalyze_flags -output csv | tee $webtech  ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | tee $webtech
+        echo -e "${BLUE}webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech &>/dev/null
     }
 
     if [ ! -f "$httpxout" ]; then
@@ -382,7 +382,7 @@ function active_recon(){
         urls+=($(csvcut -c Host,Category,App $webtech | grep -i $1 | cut -d ',' -f 1))
         result=$(printf "%s\n" "${urls[@]}")
         for url in $result; do
-            echo $url
+            echo $url | grep -oE "^https?://[^/]*(:[0-9]+)?"
         done
     }
 
@@ -414,13 +414,13 @@ function active_recon(){
 
     echo -e "${YELLOW}[*] Gathering URLs - Passive Recon on $urlprobedsd ${NC}"
     cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd
-    interlace -tL $urlprobedsd -o $enumscan -cL MISC/passive_recon.il
+    interlace -tL $urlprobedsd -o $enumscan -cL MISC/passive_recon.il --silent
     
     echo -e "${YELLOW}[*] Gathering URLs - Active Recon on $urlprobed ${NC}"
     katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt
     
-    echo -e "${YELLOW}[*] Extracting JS URLs from $enumscan/URLs/*-allurls.txt ${NC}"
-    cat $enumscan/URLs/*-allurls.txt | subjs | anew $enumscan/URLs/subjs-alljsurls.txt
+    #echo -e "${YELLOW}[*] Extracting JS URLs from $enumscan/URLs/*-allurls.txt ${NC}"
+    #cat $enumscan/URLs/*-allurls.txt | subjs | anew $enumscan/URLs/subjs-alljsurls.txt
 
     #LinkFinder.py
     #SecretFinder.py
