@@ -88,7 +88,7 @@ domaindirectorycheck(){
 }
 
 
-required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew")
+required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
@@ -413,9 +413,16 @@ function active_recon(){
     joomla_recon
     drupal_recon
 
+    echo -e "${YELLOW}[*] Gathering URLs - Passive Recon on $urlprobedsd ${NC}"
     cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd
     interlace -tL $urlprobedsd -o $enumscan -cL MISC/passive_recon.il
-    katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/live_jsfile_links.txt
+    
+    echo -e "${YELLOW}[*] Gathering URLs - Active Recon on $urlprobed ${NC}"
+    katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt
+    
+    echo -e "${YELLOW}[*] Extracting JS URLs from $enumscan/URLs/*-allurls.txt ${NC}"
+    cat $enumscan/URLs/*-allurls.txt | subjs | anew $enumscan/URLs/subjs-alljsurls.txt
+
     #LinkFinder.py
     #SecretFinder.py
     #getjswords.py
