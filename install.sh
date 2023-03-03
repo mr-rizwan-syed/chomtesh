@@ -155,6 +155,7 @@ for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null 2>&1; then
         missing_tools+=("$tool")
         echo "Dependency '$tool' not found, installing..."
+        sudo apt-get install -y pv
     fi
 done
 
