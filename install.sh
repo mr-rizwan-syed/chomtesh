@@ -68,7 +68,7 @@ dependency_installer(){
 
     if ! command_exists httpx; then
         echo "Installing httpx"
-        go install github.com/projectdiscovery/httpx/cmd/httpx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
+        go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.2.6 > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
     fi
 
     if ! command_exists anew; then
@@ -129,10 +129,27 @@ dependency_installer(){
         echo "Installing naabu"
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
         go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
-    fi    
+    fi
+
+    if ! command_exists interlace; then
+        echo "Installing naabu"
+        echo -e "\n-----------------------INSTALLING INTERLACE------------------------"
+        git clone https://github.com/codingo/Interlace.git /opt/tools/Interlace
+        pip3 install --user -r /opt/tools/Interlace/requirements.txt
+        python3 /opt/tools/Interlace/setup.py install
+        echo -e "\n-----------------------FINISHED INSTALLING INTERLACE------------------------"
+    fi  
+
+    if ! command_exists subjs; then
+        go install -v github.com/lc/subjs@latest
+    fi
+
+    if ! command_exists katana; then
+        go install github.com/projectdiscovery/katana/cmd/katana@latest
+    fi
 }
 
-required_tools=("python3" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew")
+required_tools=("python3" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" )
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null 2>&1; then

@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Scans
 #author:        R12W4N
-#version:       3.5.9
+#version:       3.6.0
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -86,7 +86,6 @@ domaindirectorycheck(){
     fi
     
 }
-
 
 required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
