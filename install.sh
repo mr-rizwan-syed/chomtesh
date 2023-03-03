@@ -129,7 +129,7 @@ dependency_installer(){
         echo "Installing naabu"
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
         # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
-        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.2/naabu_2.1.2_linux_amd64.zip -P /opt/tools/naabu
+        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P /opt/tools/naabu
         unzip /opt/tools/naabu/naabu_2.1.2_linux_amd64.zip -d /opt/tools/naabu
         mv /opt/tools/naabu/naabu /usr/local/bin
     fi
@@ -146,7 +146,7 @@ dependency_installer(){
     if ! command_exists ansi2html; then
         pip3 install ansi2html
     fi
-    
+
     if ! command_exists subjs; then
         go install -v github.com/lc/subjs@latest
     fi
@@ -156,7 +156,7 @@ dependency_installer(){
     fi
 }
 
-required_tools=("python3" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" )
+required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null 2>&1; then

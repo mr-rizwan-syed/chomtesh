@@ -261,7 +261,7 @@ function portscanner(){
                     nmap $iphost -p $ports $nmap_flags -oX $nmapscans/nmapresult-$iphost.xml -oN $nmapscans/nmapresult-$iphost.nmap &>/dev/null
                 fi            
             fi
-        }    
+        }
         
         # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
         
@@ -271,7 +271,7 @@ function portscanner(){
                 echo -e ${YELLOW}"[*] Running Nmap Service Enumeration Scan" ${NC}
                 mkdir -p $nmapscans
                 while read iphost; do
-                    scanner  
+                    scanner
                 done <"$aliveip"
                 [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
             fi
