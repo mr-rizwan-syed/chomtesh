@@ -116,6 +116,7 @@ dependency_installer(){
     if ! command_exists dmut; then
         echo "Installing dmut"
         go install github.com/bp0lr/dmut@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: dmut"
+        dmut --update-files &>/dev/null
     fi
 
     if ! command_exists nuclei; then
