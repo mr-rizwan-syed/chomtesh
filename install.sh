@@ -120,65 +120,75 @@ dependency_installer(){
 
     if ! command_exists nuclei; then
         echo "Installing nuclei"
-        go install github.com/bp0lr/dmut@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: nuclei"
-        nuclei -update
-        nuclei -ut 
+        go install github.com/bp0lr/dmut@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: nuclei" 
+        nuclei -update &>/dev/null
+        nuclei -ut &>/dev/null
     fi
 
     if ! command_exists naabu; then
         echo "Installing naabu"
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
         # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
-        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P /opt/tools/naabu
-        unzip /opt/tools/naabu/naabu_2.1.2_linux_amd64.zip -d /opt/tools/naabu
-        mv /opt/tools/naabu/naabu /usr/local/bin
+        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P /opt/tools/naabu &>/dev/null
+        unzip /opt/tools/naabu/naabu_2.1.2_linux_amd64.zip -d /opt/tools/naabu &>/dev/null
+        mv /opt/tools/naabu/naabu /usr/local/bin &>/dev/null
     fi
 
     if ! command_exists interlace; then
         echo "Installing Interlace"
-        git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/
-        pip3 install -r ./MISC/Interlace/requirements.txt
-        python3 ./MISC/Interlace/setup.py install
+        git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/ &>/dev/null
+        pip3 install -r ./MISC/Interlace/requirements.txt &>/dev/null
+        apt install python3-netaddr &>/dev/null
+        apt install python3-tqdm &>/dev/null
+        python3 ./MISC/Interlace/setup.py install &>/dev/null
     fi  
 
     if ! command_exists ansi2html; then
-        pip3 install ansi2html
+        pip3 install ansi2html &>/dev/null
     fi
 
     if ! command_exists subjs; then
-        go install -v github.com/lc/subjs@latest
+        go install -v github.com/lc/subjs@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: subjs" 
     fi
 
     if ! command_exists katana; then
-        go install github.com/projectdiscovery/katana/cmd/katana@latest
+        go install github.com/projectdiscovery/katana/cmd/katana@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: katana" 
     fi
     
     if [ ! -f ./MISC/antiburl.py ]; then
-        wget https://raw.githubusercontent.com/m4ll0k/BBTz/master/antiburl.py -P ./MISC/
+        wget https://raw.githubusercontent.com/m4ll0k/BBTz/master/antiburl.py -P ./MISC/ &>/dev/null
     fi
 
     if [ ! -d ./MISC/LinkFinder ]; then
-        git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder
-        pip3 install -r ./MISC/LinkFinder/requirements.txt
-        python3 ./MISC/LinkFinder/setup.py install
+        git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder &>/dev/null
+        pip3 install -r ./MISC/LinkFinder/requirements.txt &>/dev/null
+        python3 ./MISC/LinkFinder/setup.py install &>/dev/null
     fi
 
     if [ ! -d ./MISC/SecretFinder ]; then
-        git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder
-        pip3 install -r ./MISC/SecretFinder/requirements.txt
+        git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder &>/dev/null
+        pip3 install -r ./MISC/SecretFinder/requirements.txt &>/dev/null
+    fi
+
+    if [ ! -f ./MISC/getjswords.py ]; then
+        wget https://raw.githubusercontent.com/m4ll0k/Bug-Bounty-Toolz/master/getjswords.py -P ./MISC/ &>/dev/null
+    fi
+
+    if [ ! -f ./MISC/jsvar.sh ]; then
+        wget https://gist.githubusercontent.com/KathanP19/d2cda2f99c0b60d64b76ee6039b37e47/raw/eb105a4de06502b2732df9d682c61189c3703685/jsvar.sh -P ./MISC/ &>/dev/null
     fi
 
 }
 
-required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
-    if ! command -v "$tool" &> /dev/null 2>&1; then
+    if ! command -v "$tool" &>/dev/null 2>&1; then
         missing_tools+=("$tool")
         echo "Dependency '$tool' not found, installing..."
-        [ ! command_exists pv ] && sudo apt-get install -y pv
-    else
-        echo -e "${GREEN}All Good - JOD ${NC}"
+        if ! command_exists pv; then
+            apt-get install -y pv &>/dev/null
+        fi
     fi
 done
 
@@ -187,6 +197,10 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     dependency_installer
     exit 1
+else
+    echo -e ""
+    echo -e "${GREEN}All Good - JOD ${NC}"
+    echo -e "${CYAN}Run Chomte.sh Now :)"
 fi
 
 

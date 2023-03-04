@@ -325,7 +325,7 @@ function iphttpx(){
         webanalyze -update > /dev/null
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
         echo -e "${BLUE}webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech &>/dev/null
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech &>/dev/null 2>&1
     }
 
     if [ ! -f "$httpxout" ]; then
@@ -372,6 +372,7 @@ function iphttpx(){
 
 function content_discovery(){
     [[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
+    #[[ -f $1 ]] && interlace -tL $1 -c "dirsearch -u '_target_'"
     [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
 }
 
@@ -389,6 +390,8 @@ function active_recon(){
     wordpress_recon(){
         techdetect WordPress | anew $enumscan/wordpress_urls.txt -q
         if [ -s $enumscan/wordpress_urls.txt ];then
+            echo -e "${YELLOW}[*] Running Wordpress Recon on Below URL\n${NC}"
+            echo -e ""
             nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wordpress_nuclei_results.txt
             # wpscan with apitoken
         fi
@@ -397,6 +400,8 @@ function active_recon(){
     joomla_recon(){
         techdetect joomla | anew $enumscan/joomla_urls.txt -q
         if [ -s $enumscan/joomla_urls.txt ];then
+            echo -e "${YELLOW}[*] Running Joomla Recon on Below URL\n${NC}"
+            echo -e ""
             nuclei -l $enumscan/joomla_urls.txt -w ~/nuclei-templates/workflows/joomla-workflow.yaml -o $enumscan/joomla_nuclei_results.txt
         fi
     }
@@ -404,27 +409,45 @@ function active_recon(){
     drupal_recon(){
         techdetect Drupal | anew $enumscan/drupal_urls.txt -q
         if [ -s $enumscan/drupal_urls.txt ];then
+            echo -e "${YELLOW}[*] Running Drupal Recon on Below URL\n${NC}"
+            echo -e ""
             nuclei -l $enumscan/drupal_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/drupal_nuclei_results.txt
         fi
     }
 
     js_recon(){
-        echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
-        echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau >>${NC} $urlprobedsd"
-        cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd
-        [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent 2>/dev/null | pv -p -t -e -N "Gathering URLs from Gau"
+        echo -e "${YELLOW}[*] Performing JS Recon from Webpage and Javascript on $domain ${NC}"
+        ## Thanks to @KathanP19 and Other Community members
+        echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau and Subjs >>${NC} $urlprobedsd"
+        cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd -q &>/dev/null 2>&1
+        [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering URLs from Gau"
+        [ ! -f $enumscan/URLs/subjs-allurls.txt ] && interlace -tL $urlprobed -o $enumscan -c "echo _target_ | subjs | anew _output_/URLs/subjs-allurls.txt -q" --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering JS URLs from Subjs"
         
         echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $urlprobed"
-        [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q 2>/dev/null | pv -p -t -e -N "Katana is running"
+        [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
         
         echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
-        [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q
+        [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
         
         echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
-        [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q 2>/dev/null | pv -p -t -e -N "Finding All Valid JS URLs "
+        [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Finding All Valid JS URLs "
         
-        echo -e "${BLUE}[*] Enumerating Endpoints from valid js files >> ${NC}$enumscan/URLs/endpointsfromjs.txt"
-        [ ! -f $enumscan/URLs/endpointsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 ./MISC/LinkFinder/linkfinder.py -d -i '_target_' -o cli | grep -vE "Running against:|Invalid input" | anew $enumscan/URLs/endpointsfromjs.txt" --silent 2>/dev/null | pv -p -t -e -N "Enumerating Endpoints from valid js files"
+        echo -e "${BLUE}[*] Enumerating Endpoints from valid JS files >> ${NC}$enumscan/URLs/endpointsfromjs.txt"
+        [ ! -f $enumscan/URLs/endpointsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 ./MISC/LinkFinder/linkfinder.py -d -i '_target_' -o cli | anew $enumscan/URLs/endpointsfromjs_tmp.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Endpoints from valid js files"
+        [ -f $enumscan/URLs/endpointsfromjs_tmp.txt ] && cat $enumscan/URLs/endpointsfromjs_tmp.txt | grep -vE 'Running against|Invalid input' | anew $enumscan/URLs/endpointsfromjs.txt -q &>/dev/null 2>&1 && rm $enumscan/URLs/endpointsfromjs_tmp.txt
+
+        echo -e "${BLUE}[*] Enumerating Secrets from valid JS files >> ${NC}$enumscan/URLs/secretsfromjs.txt"
+        [ ! -f $enumscan/URLs/secretsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli | anew $enumscan/URLs/secretsfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Secrets from valid js files"
+
+        echo -e "${BLUE}[*] Enumerating Domains from valid JS files >> ${NC}$enumscan/URLs/domainfromjs.txt"
+        [ ! -f $enumscan/URLs/domainfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli  -r "\S+$domain"| anew $enumscan/URLs/domainfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Domain from valid js files"
+
+        echo -e "${BLUE}[*] Gathering Words from valid JS files >> ${NC}$enumscan/URLs/wordsfromjs.txt"
+        [ ! -f $enumscan/URLs/wordsfromjs.txt ] && cat $enumscan/URLs/validjsurls.txt | python3 ./MISC/getjswords.py | anew $enumscan/URLs/wordsfromjs.txt &>/dev/null 2>&1 | pv -p -t -e -N "Gathering words from valid js files"
+
+        echo -e "${BLUE}[*] Gathering Variables from valid JS files >> ${NC}$enumscan/URLs/varfromjs.txt"
+        [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
+
     }
 
     wordpress_recon
