@@ -116,7 +116,6 @@ dependency_installer(){
     if ! command_exists dmut; then
         echo "Installing dmut"
         go install github.com/bp0lr/dmut@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: dmut"
-        dmut --update-files &>/dev/null
     fi
 
     if ! command_exists nuclei; then
@@ -136,12 +135,10 @@ dependency_installer(){
     fi
 
     if ! command_exists interlace; then
-        echo "Installing naabu"
-        echo -e "\n-----------------------INSTALLING INTERLACE------------------------"
-        git clone https://github.com/codingo/Interlace.git /opt/tools/Interlace
-        pip3 install --user -r /opt/tools/Interlace/requirements.txt
-        python3 /opt/tools/Interlace/setup.py install
-        echo -e "\n-----------------------FINISHED INSTALLING INTERLACE------------------------"
+        echo "Installing Interlace"
+        git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/
+        pip3 install -r ./MISC/Interlace/requirements.txt
+        python3 ./MISC/Interlace/setup.py install
     fi  
 
     if ! command_exists ansi2html; then
@@ -155,6 +152,22 @@ dependency_installer(){
     if ! command_exists katana; then
         go install github.com/projectdiscovery/katana/cmd/katana@latest
     fi
+    
+    if [ ! -f ./MISC/antiburl.py ]; ; then
+        wget https://raw.githubusercontent.com/m4ll0k/BBTz/master/antiburl.py -P ./MISC/
+    fi
+
+    if [ ! -d ./MISC/LinkFinder ]; ; then
+        git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder
+        pip3 install -r ./MISC/LinkFinder/requirements.txt
+        python3 ./MISC/LinkFinder/setup.py install
+    fi
+
+    if [ ! -d ./MISC/SecretFinder ]; ; then
+        git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder
+        pip3 install -r ./MISC/SecretFinder/requirements.txt
+    fi
+
 }
 
 required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
@@ -163,7 +176,9 @@ for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null 2>&1; then
         missing_tools+=("$tool")
         echo "Dependency '$tool' not found, installing..."
-        sudo apt-get install -y pv
+        [ ! command_exists pv ] && sudo apt-get install -y pv
+    else
+        echo -e "{GREEN}All Good - JOD ${NC}"
     fi
 done
 

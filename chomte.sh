@@ -238,7 +238,7 @@ function nmapconverter(){
     echo -e "${GREEN}[+] Merged Nmap CSV Generated $nmapscans/Nmap_Final_Merged.csv${NC}[$sdc]"
 
     # Generating HTML Report Format
-    ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html MISC/nmap-bootstrap.xsl {}
+    ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {}
     echo -e "${GREEN}[+] HTML Report Format Generated ${NC}[$sdc]"
     
     # Generating RAW Colored HTML Format
@@ -408,21 +408,30 @@ function active_recon(){
         fi
     }
 
+    js_recon(){
+        echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
+        echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau >>${NC} $urlprobedsd"
+        cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd
+        [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent 2>/dev/null | pv -p -t -e -N "Gathering URLs from Gau"
+        
+        echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $urlprobed"
+        [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q 2>/dev/null | pv -p -t -e -N "Katana is running"
+        
+        echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
+        [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q
+        
+        echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
+        [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q 2>/dev/null | pv -p -t -e -N "Finding All Valid JS URLs "
+        
+        echo -e "${BLUE}[*] Enumerating Endpoints from valid js files >> ${NC}$enumscan/URLs/endpointsfromjs.txt"
+        [ ! -f $enumscan/URLs/endpointsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 ./MISC/LinkFinder/linkfinder.py -d -i '_target_' -o cli | grep -vE "Running against:|Invalid input" | anew $enumscan/URLs/endpointsfromjs.txt" --silent 2>/dev/null | pv -p -t -e -N "Enumerating Endpoints from valid js files"
+    }
+
     wordpress_recon
     joomla_recon
     drupal_recon
+    js_recon
 
-    echo -e "${YELLOW}[*] Gathering URLs - Passive Recon on $urlprobedsd ${NC}"
-    cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd
-    interlace -tL $urlprobedsd -o $enumscan -cL MISC/passive_recon.il --silent
-    
-    echo -e "${YELLOW}[*] Gathering URLs - Active Recon on $urlprobed ${NC}"
-    katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt
-    
-    #echo -e "${YELLOW}[*] Extracting JS URLs from $enumscan/URLs/*-allurls.txt ${NC}"
-    #cat $enumscan/URLs/*-allurls.txt | subjs | anew $enumscan/URLs/subjs-alljsurls.txt
-
-    #LinkFinder.py
     #SecretFinder.py
     #getjswords.py
     #jsvar.sh
