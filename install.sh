@@ -153,17 +153,17 @@ dependency_installer(){
         go install github.com/projectdiscovery/katana/cmd/katana@latest
     fi
     
-    if [ ! -f ./MISC/antiburl.py ]; ; then
+    if [ ! -f ./MISC/antiburl.py ]; then
         wget https://raw.githubusercontent.com/m4ll0k/BBTz/master/antiburl.py -P ./MISC/
     fi
 
-    if [ ! -d ./MISC/LinkFinder ]; ; then
+    if [ ! -d ./MISC/LinkFinder ]; then
         git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder
         pip3 install -r ./MISC/LinkFinder/requirements.txt
         python3 ./MISC/LinkFinder/setup.py install
     fi
 
-    if [ ! -d ./MISC/SecretFinder ]; ; then
+    if [ ! -d ./MISC/SecretFinder ]; then
         git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder
         pip3 install -r ./MISC/SecretFinder/requirements.txt
     fi
@@ -178,7 +178,7 @@ for tool in "${required_tools[@]}"; do
         echo "Dependency '$tool' not found, installing..."
         [ ! command_exists pv ] && sudo apt-get install -y pv
     else
-        echo -e "{GREEN}All Good - JOD ${NC}"
+        echo -e "${GREEN}All Good - JOD ${NC}"
     fi
 done
 
