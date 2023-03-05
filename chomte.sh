@@ -372,15 +372,24 @@ function iphttpx(){
 function content_discovery(){
 
     ffuflist(){
-        mkdir -p $enumscan/contentdiscovery
-        interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
-        cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
-        cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' >> $enumscan/contentdiscovery/all-cd.csv
+        mergeffufcsv(){
+            cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
+            cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' >> $enumscan/contentdiscovery/all-cd.csv
+        }
+        
+        if [ "$(ls -A $enumscan/contentdiscovery 2>/dev/null)" = "" ]; then
+            echo "$enumscan/contentdiscovery -- Directory is empty, continuing..."
+            mkdir -p $enumscan/contentdiscovery
+            interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
+            [ -d $enumscan/contentdiscovery ] && ls $enumscan/contentdiscovery/*.csv >/dev/null 2>&1 && mergeffufcsv
+        else
+            echo -e "${RED}ContentDiscover Directory Already Exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
+            exit 0
+        fi
     }
 
-    [ ! "$(ls -A $enumscan/contentdiscovery)" ] && ffuflist || echo -e "${RED}ContentDiscover Directory Already Exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
-    
     #[[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
+    [[ -f $1 ]] && ffuflist $1   
     [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
 }
 
@@ -400,7 +409,7 @@ function active_recon(){
         if [ -s $enumscan/wordpress_urls.txt ];then
             echo -e "${YELLOW}[*] Running Wordpress Recon on Below URL\n${NC}"
             echo -e ""
-            nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wordpress_nuclei_results.txt
+            [ ! -f $enumscan/wordpress_nuclei_results.txt ] && nuclei -l $enumscan/wordpress_urls.txt -w ~/nuclei-templates/workflows/wordpress-workflow.yaml -o $enumscan/wordpress_nuclei_results.txt
             # wpscan with apitoken
         fi
     }
@@ -410,7 +419,7 @@ function active_recon(){
         if [ -s $enumscan/joomla_urls.txt ];then
             echo -e "${YELLOW}[*] Running Joomla Recon on Below URL\n${NC}"
             echo -e ""
-            nuclei -l $enumscan/joomla_urls.txt -w ~/nuclei-templates/workflows/joomla-workflow.yaml -o $enumscan/joomla_nuclei_results.txt
+            [ ! -f $enumscan/joomla_nuclei_results.txt ] && nuclei -l $enumscan/joomla_urls.txt -w ~/nuclei-templates/workflows/joomla-workflow.yaml -o $enumscan/joomla_nuclei_results.txt
         fi
     }
 
@@ -419,7 +428,7 @@ function active_recon(){
         if [ -s $enumscan/drupal_urls.txt ];then
             echo -e "${YELLOW}[*] Running Drupal Recon on Below URL\n${NC}"
             echo -e ""
-            nuclei -l $enumscan/drupal_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/drupal_nuclei_results.txt
+            [ ! -f $enumscan/drupal_nuclei_results.txt ] && nuclei -l $enumscan/drupal_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/drupal_nuclei_results.txt
         fi
     }
 
