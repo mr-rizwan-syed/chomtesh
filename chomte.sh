@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Scans
 #author:        R12W4N
-#version:       3.6.0
+#version:       3.6.2
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -315,8 +315,7 @@ function portscanner(){
                 fi
 	        fi
             mkdir -p $nmapscans
-        fi    
-
+        fi
 }
 
 function iphttpx(){
@@ -371,8 +370,17 @@ function iphttpx(){
 }    
 
 function content_discovery(){
-    [[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
-    #[[ -f $1 ]] && interlace -tL $1 -c "dirsearch -u '_target_'"
+
+    ffuflist(){
+        mkdir -p $enumscan/contentdiscovery
+        interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
+        cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
+        cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' >> $enumscan/contentdiscovery/all-cd.csv
+    }
+
+    [ ! "$(ls -A $enumscan/contentdiscovery)" ] && ffuflist || echo -e "${RED}ContentDiscover Directory Already Exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
+    
+    #[[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
     [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
 }
 
@@ -418,16 +426,19 @@ function active_recon(){
     js_recon(){
         echo -e "${YELLOW}[*] Performing JS Recon from Webpage and Javascript on $domain ${NC}"
         ## Thanks to @KathanP19 and Other Community members
-        echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau and Subjs >>${NC} $urlprobedsd"
+        echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau and Subjs >>${NC} $enumscan/URLs/gau-allurls.txt ${BLUE}and${NC} $enumscan/URLs/subjs-allurls.txt"
         cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd -q &>/dev/null 2>&1
         [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering URLs from Gau"
         [ ! -f $enumscan/URLs/subjs-allurls.txt ] && interlace -tL $urlprobed -o $enumscan -c "echo _target_ | subjs | anew _output_/URLs/subjs-allurls.txt -q" --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering JS URLs from Subjs"
         
-        echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $urlprobed"
+        echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $enumscan/URLs/katana-allurls.txt"
         [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
         
         echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
         [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
+
+        echo -e "${BLUE}[*] Taking out Potential URLs >>${NC} $enumscan/URLs/potentialurls.txt"
+        [ ! -f $enumscan/URLs/potentialurls.txt ] && cat $enumscan/URLs/*-allurls.txt | gf excludeExt | anew $enumscan/URLs/potentialurls.txt -q &>/dev/null 2>&1
         
         echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
         [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Finding All Valid JS URLs "
@@ -450,11 +461,16 @@ function active_recon(){
 
     }
 
+    xnl(){
+        [ ! -f $enumscan/URLs/waymore.txt ] && python3 ./MISC/waymore/waymore.py -i $domain -mode B -oU $enumscan/URLs/waymore.txt -oR $enumscan/URLs/waymoreResponses/
+        [ -d $enumscan/URLs/waymoreResponses ] && python3 ./MISC/xnLinkFinder/xnLinkFinder.py -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o $enumscan/URLs/xnLinkFinder_links.txt -op $enumscan/URLs/xnLinkFinder_parameters.txt -owl $enumscan/URLs/xnLinkFinder_wordlist.txt 
+    }
+
     wordpress_recon
     joomla_recon
     drupal_recon
-    js_recon
-
+    [[ ${jsrecon} == true ]] && js_recon
+    [[ ${enumxnl} == true ]] && xnl
     #SecretFinder.py
     #getjswords.py
     #jsvar.sh
@@ -553,6 +569,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     -e|--enum)
       enum=true
+      shift
+      ;;
+    -js|--jsrecon)
+      jsrecon=true
+      shift
+      ;;
+    -ex|--enumxnl)
+      enumxnl=true
       shift
       ;;
     -jsd|--jsubfinder)

@@ -46,6 +46,11 @@ dependency_installer(){
         apt install dirsearch -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: dirsearch"
     fi
 
+    if ! command_exists ffuf; then
+        echo "Installing FFUF"
+        go install github.com/ffuf/ffuf/v2@latest
+    fi
+
     if ! command_exists csvcut; then
         echo "Installing csvkit"
         apt install csvkit -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: csvkit"
@@ -80,6 +85,8 @@ dependency_installer(){
         echo "Installing gf"
         go install github.com/tomnomnom/gf@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: gf"
         git clone https://github.com/1ndianl33t/Gf-Patterns ~/.gf
+        cp ./MISC/excludeExt ~/.gf/
+        exec $SHELL
     fi
 
     if ! command_exists anew; then
@@ -155,10 +162,6 @@ dependency_installer(){
         go install github.com/projectdiscovery/katana/cmd/katana@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: katana" 
     fi
     
-    if [ ! -f ./MISC/antiburl.py ]; then
-        wget https://raw.githubusercontent.com/m4ll0k/BBTz/master/antiburl.py -P ./MISC/ &>/dev/null
-    fi
-
     if [ ! -d ./MISC/LinkFinder ]; then
         git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder &>/dev/null
         pip3 install -r ./MISC/LinkFinder/requirements.txt &>/dev/null
@@ -170,17 +173,20 @@ dependency_installer(){
         pip3 install -r ./MISC/SecretFinder/requirements.txt &>/dev/null
     fi
 
-    if [ ! -f ./MISC/getjswords.py ]; then
-        wget https://raw.githubusercontent.com/m4ll0k/Bug-Bounty-Toolz/master/getjswords.py -P ./MISC/ &>/dev/null
+    if [ ! -d ./MISC/waymore ]; then
+        git clone https://github.com/xnl-h4ck3r/waymore.git ./MISC/waymore
+        python3 ./MISC/waymore/setup.py install
     fi
 
-    if [ ! -f ./MISC/jsvar.sh ]; then
-        wget https://gist.githubusercontent.com/KathanP19/d2cda2f99c0b60d64b76ee6039b37e47/raw/eb105a4de06502b2732df9d682c61189c3703685/jsvar.sh -P ./MISC/ &>/dev/null
+    if [ ! -d ./MISC/xnLinkFinder ]; then
+        git clone https://github.com/xnl-h4ck3r/xnLinkFinder.git ./MISC/xnLinkFinder
+        python3 ./MISC/xnLinkFinder/setup.py install
     fi
+
 
 }
 
-required_tools=("go" "python3" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -196,6 +202,7 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e ""
     echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     dependency_installer
+    wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P ./MISC/ > /dev/null 2>&1
     exit 1
 else
     echo -e ""
