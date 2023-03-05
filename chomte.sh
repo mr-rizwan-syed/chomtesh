@@ -35,15 +35,12 @@ echo ${GREEN} '
       '  ${NC}                                                      
 }
 
-function trap_ctrlc ()
-{
-    echo "Ctrl-C caught...performing clean up"
-    echo "Doing cleanup"
-    trap "kill 0" EXIT
-    exit 2
+function cleanup() {
+  echo "Cleaning up before exit"
+  exit 0
 }
 
-trap "trap_ctrlc" 4
+trap cleanup SIGINT
 
 # Show usage via commandline arguments
 print_usage() {
@@ -370,8 +367,9 @@ function iphttpx(){
 }    
 
 function content_discovery(){
-
+    trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
     ffuflist(){
+        echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
         mergeffufcsv(){
             cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
             cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' >> $enumscan/contentdiscovery/all-cd.csv
