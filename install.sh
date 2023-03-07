@@ -92,6 +92,11 @@ dependency_installer(){
         go install github.com/tomnomnom/anew@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: anew"
     fi
 
+    if ! command_exists jsubfinder; then
+        echo "Installing jsubfinder"
+        go install github.com/ThreatUnkown/jsubfinder@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: jsubfinder"
+    fi
+
     if ! command_exists qsinject; then
         echo "Installing qsinject"
         go install github.com/ameenmaali/qsinject@latestt > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: qsinject"

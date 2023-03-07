@@ -84,7 +84,7 @@ domaindirectorycheck(){
     
 }
 
-required_tools=("subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
@@ -211,12 +211,13 @@ function getsubdomains(){
         runjsubfinder(){
             echo -e ""
             echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
-            echo -e "${BLUE}cat $subdomains | xargs -I {} sh -c 'echo {} | jsubfinder search --crawl -t 20 -K | anew $jsubfinderout'${NC}"
+            echo -e "${BLUE}interlace -tL $subdomains -o $jsubfinderout -c 'echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q'${NC}"
             echo -e ""
-            cat $subdomains | xargs -I {} sh -c 'echo {} | jsubfinder search --crawl -t 20 -K | anew $jsubfinderout'
-            dnsbrute_sdc=$(cat $jsubfinderout | anew $subdomains | wc -l)
+            interlace -tL $subdomains -o $jsubfinderout -c "echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q" --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Subdomains from JS"
+            jsub_sdc=$(cat $jsubfinderout | anew $subdomains | wc -l)
             total_sdc=$(cat $subdomains | wc -l)
-            echo -e "${GREEN}[+] Subdomains Collected ${NC}[$total_sdc]"
+            echo -e "${GREEN}[+] Unique Subdomains Collected from JSubfinder${NC}[$jsub_sdc]"
+            echo -e "${GREEN}[+] Total Subdomains Collected ${NC}[$total_sdc]"
         }
 
         [ "$jsd" = true ] && runjsubfinder
@@ -493,17 +494,16 @@ function active_recon(){
             [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
         }
 
-        if [ -s $urlprobed  ] && [ -s $urlprobedsd ]
-        then
+        if [ -s $urlprobed  ] && [ -s $urlprobedsd ]; then
             passivereconurl
             activereconurl
         fi  
-        if [ -s $enumscan/URLs/*-allurls.txt ]
+        if [ -s $enumscan/URLs/*-allurls.txt ]; then
             jsextractor
             pot_url
             validjsurlextractor
         fi
-        if [ -s $enumscan/URLs/validjsurls.txt ]
+        if [ -s $enumscan/URLs/validjsurls.txt ]; then
             endpointsextractor
             secretsextractor
             domainfromjsextractor
