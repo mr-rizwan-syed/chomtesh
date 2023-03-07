@@ -255,61 +255,52 @@ function portscanner(){
                 if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
                     echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
                 else
+                    trap 'echo -e "${RED}Ctrl + C detected in Nmap Scan${NC}"' SIGINT
                     nmap $iphost -p $ports $nmap_flags -oX $nmapscans/nmapresult-$iphost.xml -oN $nmapscans/nmapresult-$iphost.nmap &>/dev/null
                 fi            
             fi
         }
         
+        nmapscanner(){
+            if [[ $nmap == "true" ]];then
+                mkdir -p $nmapscans
+                echo -e ${YELLOW}"[*] Running Nmap Scan"${NC}
+                counter=0
+                while read iphost; do
+                    scanner
+                    counter=$((counter+1))
+                    progress=$(($counter * 100 / $(wc -l < "$aliveip")))
+                    printf "Progress: [%-50s] %d%%\r" $(head -c $(($progress / 2)) < /dev/zero | tr '\0' '#') $progress
+                done <"$aliveip"
+                [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo -e "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
+            fi
+        }
         # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
         
         if [ -f "$naabuout" ]; then
             csvcut -c ip $naabuout | grep -v ip | anew $aliveip
-            if [[ $nmap == "true" ]];then
-                echo -e ${YELLOW}"[*] Running Nmap Service Enumeration Scan" ${NC}
-                mkdir -p $nmapscans
-                while read iphost; do
-                    scanner
-                done <"$aliveip"
-                [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
-            fi
+            nmapscanner
         # else run naabu to initiate port scan
         # start from here
         else
-            echo $ip   
+            echo $ip
             if [ -f "$1" ]; then
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
-                echo -e ${BLUE}"naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
+                echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
                 csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q
                 csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport &>/dev/null
                 csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport &>/dev/null
                 echo -e ${GREEN}"[+]Quick Port Scan Completed $naabuout" ${NC}
-                if [[ $nmap == "true" ]];then
-                    mkdir -p $nmapscans
-                    echo -e ${YELLOW}"[*] Running Nmap Scan"${NC}
-                    counter=0
-                    while read iphost; do
-                        scanner
-                        counter=$((counter+1))
-                        progress=$(($counter * 100 / $(wc -l < "$aliveip")))
-                        printf "Progress: [%-50s] %d%%\r" $(head -c $(($progress / 2)) < /dev/zero | tr '\0' '#') $progress
-                    done <"$aliveip"
-                    [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo -e "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
-                fi
+                nmapscanner
             else
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
-                echo -e ${BLUE}"naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
+                echo -e ${BLUE}"[#] naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
                 cat $naabuout | cut -d ',' -f 2 | grep -v ip | anew $aliveip -q
                 csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport
                 echo -e ${GREEN}"[+]Quick Port Scan Completed$naabuout" ${NC}
-                if [[ $nmap == "true" ]];then
-                    mkdir -p $nmapscans
-                    while read iphost; do
-                        scanner
-                    done <"$aliveip"
-                    nmapconverter
-                fi
+                nmapscanner
 	        fi
             mkdir -p $nmapscans
         fi
@@ -320,66 +311,63 @@ function iphttpx(){
     webtechcheck(){
         webanalyze -update > /dev/null
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
-        echo -e "${BLUE}webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech &>/dev/null 2>&1
+        echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q 2>/dev/null
+        echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
+    }
+
+    httpxcheck(){
+        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
+        if [ -f "$1" ]; then
+            echo -e "${BLUE}[#] cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+            cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+        else
+            echo "${BLUE}[#] echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
+            echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+        fi
+        csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
+        csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsdurls
+        csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsdurls
+        echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+        webtechcheck
     }
 
     if [ ! -f "$httpxout" ]; then
         echo "The file $httpxout does not exist. Running command..."
         
         if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
-            echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-            echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-            csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsdurls
-            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsdurls
-            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-            webtechcheck
-     
+            httpxcheck     
         elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
-            echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-            echo "${BLUE}echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-            csvcut $httpxout -c url 2>/dev/null| grep -v url | anew $urlprobed
-            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | anew $potentialsdurls
-            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsdurls
-            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-            webtechcheck
-            
+            httpxcheck            
         elif [ ${hostportscan} == true ] && [ -f $1 ]; then
             declared_paths
-            echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-            echo -e "${BLUE}cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-            csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-            csvcut -c final_url $httpxout | grep -v autodiscover | grep $domain | sed -E 's#^(https?://)?([^/]*)/([^/?]*).*#\1\2/\3#' | anew $potentialsdurls
-            csvcut -c url,final_url $httpxout | awk -F, '$2 == "" { print }' | tr -d ',' | anew $potentialsdurls
-            echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-            webtechcheck
+            httpxcheck
         else
             echo $1
             echo -e "Need to scan port"
         fi
     else
-        echo "The file $httpxout already exists. Skipping command..."
+        echo -e "${CYAN}The file $httpxout already exists. Skipping command...${NC}"
     fi
 }    
 
 function content_discovery(){
-    trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
-    ffuflist(){
-        echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
-        mergeffufcsv(){
+    mergeffufcsv(){
+        echo -e "${YELLOW}[*] Merging All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
+        if [ -d $enumscan/contentdiscovery ]; then
             cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
             cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' >> $enumscan/contentdiscovery/all-cd.csv
-        }
-        
+        fi
+    }
+    
+    ffuflist(){
+        trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
+        echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
         if [ "$(ls -A $enumscan/contentdiscovery 2>/dev/null)" = "" ]; then
+            echo -e ""
             echo "$enumscan/contentdiscovery -- Directory is empty, continuing..."
             mkdir -p $enumscan/contentdiscovery
             interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
-            [ -d $enumscan/contentdiscovery ] && ls $enumscan/contentdiscovery/*.csv >/dev/null 2>&1 && mergeffufcsv
         else
             echo -e "${RED}ContentDiscover Directory Already Exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
             exit 0
@@ -387,7 +375,7 @@ function content_discovery(){
     }
 
     #[[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
-    [[ -f $1 ]] && ffuflist $1   
+    [[ -f $1 ]] && ffuflist $1 && mergeffufcsv
     [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
 }
 
@@ -430,42 +418,91 @@ function active_recon(){
         fi
     }
 
+    jira_recon(){
+        techdetect jira | anew $enumscan/jira_urls.txt -q
+        if [ -s $enumscan/jira_urls.txt ];then
+            echo -e "${YELLOW}[*] Running Jira Recon on Below URL\n${NC}"
+            echo -e ""
+            [ ! -f $enumscan/jira_nuclei_results.txt ] && nuclei -l $enumscan/jira_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/jira_nuclei_results.txt
+        fi
+    }
+
     js_recon(){
         echo -e "${YELLOW}[*] Performing JS Recon from Webpage and Javascript on $domain ${NC}"
         ## Thanks to @KathanP19 and Other Community members
-        echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau and Subjs >>${NC} $enumscan/URLs/gau-allurls.txt ${BLUE}and${NC} $enumscan/URLs/subjs-allurls.txt"
-        cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd -q &>/dev/null 2>&1
-        [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering URLs from Gau"
-        [ ! -f $enumscan/URLs/subjs-allurls.txt ] && interlace -tL $urlprobed -o $enumscan -c "echo _target_ | subjs | anew _output_/URLs/subjs-allurls.txt -q" --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering JS URLs from Subjs"
+        passivereconurl(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said "' SIGINT
+            echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau and Subjs >>${NC} $enumscan/URLs/gau-allurls.txt ${BLUE}and${NC} $enumscan/URLs/subjs-allurls.txt"
+            cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd -q &>/dev/null 2>&1
+            [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering URLs from Gau"
+            [ ! -f $enumscan/URLs/subjs-allurls.txt ] && interlace -tL $urlprobed -o $enumscan -c "echo _target_ | subjs | anew _output_/URLs/subjs-allurls.txt -q" --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering JS URLs from Subjs"
+        }
+
+        activereconurl(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $enumscan/URLs/katana-allurls.txt"
+            [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
+        }
         
-        echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $enumscan/URLs/katana-allurls.txt"
-        [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
+        jsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
+            [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
+        }
         
-        echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
-        [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
+        pot_url(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Taking out Potential URLs >>${NC} $enumscan/URLs/potentialurls.txt"
+            [ ! -f $enumscan/URLs/potentialurls.txt ] && cat $enumscan/URLs/*-allurls.txt | gf excludeExt | anew $enumscan/URLs/potentialurls.txt -q &>/dev/null 2>&1
+        }
 
-        echo -e "${BLUE}[*] Taking out Potential URLs >>${NC} $enumscan/URLs/potentialurls.txt"
-        [ ! -f $enumscan/URLs/potentialurls.txt ] && cat $enumscan/URLs/*-allurls.txt | gf excludeExt | anew $enumscan/URLs/potentialurls.txt -q &>/dev/null 2>&1
+        validjsurlextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
+            [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N &>/dev/null 2>&1 | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Finding All Valid JS URLs "
+        }
         
-        echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
-        [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Finding All Valid JS URLs "
+        endpointsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Enumerating Endpoints from valid JS files >> ${NC}$enumscan/URLs/endpointsfromjs.txt"
+            [ ! -f $enumscan/URLs/endpointsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 ./MISC/LinkFinder/linkfinder.py -d -i '_target_' -o cli | anew $enumscan/URLs/endpointsfromjs_tmp.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Endpoints from valid js files"
+            [ -f $enumscan/URLs/endpointsfromjs_tmp.txt ] && cat $enumscan/URLs/endpointsfromjs_tmp.txt | grep -vE 'Running against|Invalid input' | anew $enumscan/URLs/endpointsfromjs.txt -q &>/dev/null 2>&1 && rm $enumscan/URLs/endpointsfromjs_tmp.txt
+        }
         
-        echo -e "${BLUE}[*] Enumerating Endpoints from valid JS files >> ${NC}$enumscan/URLs/endpointsfromjs.txt"
-        [ ! -f $enumscan/URLs/endpointsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 ./MISC/LinkFinder/linkfinder.py -d -i '_target_' -o cli | anew $enumscan/URLs/endpointsfromjs_tmp.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Endpoints from valid js files"
-        [ -f $enumscan/URLs/endpointsfromjs_tmp.txt ] && cat $enumscan/URLs/endpointsfromjs_tmp.txt | grep -vE 'Running against|Invalid input' | anew $enumscan/URLs/endpointsfromjs.txt -q &>/dev/null 2>&1 && rm $enumscan/URLs/endpointsfromjs_tmp.txt
+        secretsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Enumerating Secrets from valid JS files >> ${NC}$enumscan/URLs/secretsfromjs.txt"
+            [ ! -f $enumscan/URLs/secretsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli | anew $enumscan/URLs/secretsfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Secrets from valid js files"
+        }
 
-        echo -e "${BLUE}[*] Enumerating Secrets from valid JS files >> ${NC}$enumscan/URLs/secretsfromjs.txt"
-        [ ! -f $enumscan/URLs/secretsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli | anew $enumscan/URLs/secretsfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Secrets from valid js files"
+        domainfromjsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Enumerating Domains from valid JS files >> ${NC}$enumscan/URLs/domainfromjs.txt"
+            [ ! -f $enumscan/URLs/domainfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli  -r "\S+$domain" &>/dev/null 2>&1| anew $enumscan/URLs/domainfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Domain from valid js files"
+        }
+        
+        wordsfromjsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Gathering Words from valid JS files >> ${NC}$enumscan/URLs/wordsfromjs.txt"
+            [ ! -f $enumscan/URLs/wordsfromjs.txt ] && cat $enumscan/URLs/validjsurls.txt | python3 ./MISC/getjswords.py &>/dev/null 2>&1 | anew $enumscan/URLs/wordsfromjs.txt &>/dev/null 2>&1 | pv -p -t -e -N "Gathering words from valid js files"
+        }
 
-        echo -e "${BLUE}[*] Enumerating Domains from valid JS files >> ${NC}$enumscan/URLs/domainfromjs.txt"
-        [ ! -f $enumscan/URLs/domainfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli  -r "\S+$domain"| anew $enumscan/URLs/domainfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Domain from valid js files"
-
-        echo -e "${BLUE}[*] Gathering Words from valid JS files >> ${NC}$enumscan/URLs/wordsfromjs.txt"
-        [ ! -f $enumscan/URLs/wordsfromjs.txt ] && cat $enumscan/URLs/validjsurls.txt | python3 ./MISC/getjswords.py | anew $enumscan/URLs/wordsfromjs.txt &>/dev/null 2>&1 | pv -p -t -e -N "Gathering words from valid js files"
-
-        echo -e "${BLUE}[*] Gathering Variables from valid JS files >> ${NC}$enumscan/URLs/varfromjs.txt"
-        [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
-
+        varjsurlsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Gathering Variables from valid JS files >> ${NC}$enumscan/URLs/varfromjs.txt"
+            [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
+        }
+    
+        passivereconurl
+        activereconurl
+        jsextractor
+        pot_url
+        validjsurlextractor
+        endpointsextractor
+        secretsextractor
+        domainfromjsextractor
+        wordsfromjsextractor
+        varjsurlsextractor
     }
 
     xnl(){
@@ -476,12 +513,10 @@ function active_recon(){
     wordpress_recon
     joomla_recon
     drupal_recon
+    jira_recon
     [[ ${jsrecon} == true ]] && js_recon
     [[ ${enumxnl} == true ]] && xnl
-    #SecretFinder.py
-    #getjswords.py
-    #jsvar.sh
-    #findomxss.sh
+
 }
 
 
@@ -511,6 +546,15 @@ function rundomainscan(){
         # Running Functions
         portscanner $domain
         iphttpx $hostport
+        if [[ ${contentscan} == true ]];then
+            mkdir -p $enumscan
+            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
+        fi
+        if [[ ${enum} == true ]];then
+            mkdir -p $enumscan
+            [[ ${httpxout} ]] && active_recon
+            # activescan $httpxout
+        fi
     else
         echo -e "${RED}[-] Domain / Domain List not specified.. Check -d again${NC}"
     fi
@@ -522,6 +566,15 @@ function runipscan(){
         echo IP Module $ip $ipscan
         portscanner $ip
         iphttpx $ipport
+        if [[ ${contentscan} == true ]];then
+            mkdir -p $enumscan
+            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
+        fi
+        if [[ ${enum} == true ]];then
+            mkdir -p $enumscan
+            [[ ${httpxout} ]] && active_recon
+            # activescan $httpxout
+        fi
     else
         echo -e "${RED}[-] IP not specified.. Check -i again${NC}"
     fi
