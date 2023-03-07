@@ -226,7 +226,7 @@ function getsubdomains(){
 function nmapconverter(){
     # Convert to csv
     ls $nmapscans/*.xml | xargs -I {} python3 $PWD/MISC/xml2csv.py -f {} -csv {}.csv &>/dev/null 
-    echo -e "${GREEN}[+] All Nmap CSV Generated ${NC}[$sdc]"
+    echo -e "${GREEN}[+] All Nmap CSV Generated ${NC}"
     
     # Merge all csv
     first_file=$(ls $nmapscans/*.csv | head -n 1)
@@ -236,11 +236,11 @@ function nmapconverter(){
 
     # Generating HTML Report Format
     ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {}
-    echo -e "${GREEN}[+] HTML Report Format Generated ${NC}[$sdc]"
+    echo -e "${GREEN}[+] HTML Report Format Generated ${NC}"
     
     # Generating RAW Colored HTML Format
     ls $nmapscans/*.nmap | xargs -I {} sh -c 'cat {} | ccze -A | ansi2html > {}_nmap_raw_colored.html'
-    echo -e "${GREEN}[+] HTML RAW Colored Format Generated ${NC}[$sdc]"
+    echo -e "${GREEN}[+] HTML RAW Colored Format Generated ${NC}"
 }
 
 function portscanner(){
@@ -444,18 +444,18 @@ function active_recon(){
             [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
         }
         
-        jsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
-            echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
-            [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
-        }
-        
         pot_url(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
             echo -e "${BLUE}[*] Taking out Potential URLs >>${NC} $enumscan/URLs/potentialurls.txt"
             [ ! -f $enumscan/URLs/potentialurls.txt ] && cat $enumscan/URLs/*-allurls.txt | gf excludeExt | anew $enumscan/URLs/potentialurls.txt -q &>/dev/null 2>&1
         }
 
+        jsextractor(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
+            [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
+        }
+        
         validjsurlextractor(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
             echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
@@ -493,22 +493,23 @@ function active_recon(){
             [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
         }
 
-        if [ "$var1" -eq 10 ] && [ "$var2" -gt 20 ]
+        if [ -s $urlprobed  ] && [ -s $urlprobedsd ]
         then
-            echo "Both conditions are true"
-        else
-            echo "At least one condition is false"
+            passivereconurl
+            activereconurl
+        fi  
+        if [ -s $enumscan/URLs/*-allurls.txt ]
+            jsextractor
+            pot_url
+            validjsurlextractor
         fi
-        passivereconurl
-        activereconurl
-        jsextractor
-        pot_url
-        validjsurlextractor
-        endpointsextractor
-        secretsextractor
-        domainfromjsextractor
-        wordsfromjsextractor
-        varjsurlsextractor
+        if [ -s $enumscan/URLs/validjsurls.txt ]
+            endpointsextractor
+            secretsextractor
+            domainfromjsextractor
+            wordsfromjsextractor
+            varjsurlsextractor
+        fi
     }
 
     xnl(){

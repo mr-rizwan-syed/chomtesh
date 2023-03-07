@@ -181,10 +181,16 @@ dependency_installer(){
         python3 ./MISC/xnLinkFinder/setup.py install
     fi
 
+    if ! command_exists ccze; then
+        apt install ccze > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: ccze" 
+    fi
+
+    [ -f ./MISC/dicc.txt ] && wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P ./MISC/ > /dev/null 2>&1
+    [ -f ~/.gf/excludeExt.json ] && cp ./MISC/excludeExt.json ~/.gf/ && exec $SHELL
 
 }
 
-required_tools=("go" "python3" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -200,9 +206,6 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e ""
     echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     dependency_installer
-    wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P ./MISC/ > /dev/null 2>&1
-    cp ./MISC/excludeExt ~/.gf/
-    exec $SHELL
     exit 1
 else
     echo -e ""
