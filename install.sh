@@ -85,8 +85,6 @@ dependency_installer(){
         echo "Installing gf"
         go install github.com/tomnomnom/gf@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: gf"
         git clone https://github.com/1ndianl33t/Gf-Patterns ~/.gf
-        cp ./MISC/excludeExt ~/.gf/
-        exec $SHELL
     fi
 
     if ! command_exists anew; then
@@ -203,6 +201,8 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     dependency_installer
     wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P ./MISC/ > /dev/null 2>&1
+    cp ./MISC/excludeExt ~/.gf/
+    exec $SHELL
     exit 1
 else
     echo -e ""

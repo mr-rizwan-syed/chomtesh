@@ -492,7 +492,13 @@ function active_recon(){
             echo -e "${BLUE}[*] Gathering Variables from valid JS files >> ${NC}$enumscan/URLs/varfromjs.txt"
             [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
         }
-    
+
+        if [ "$var1" -eq 10 ] && [ "$var2" -gt 20 ]
+        then
+            echo "Both conditions are true"
+        else
+            echo "At least one condition is false"
+        fi
         passivereconurl
         activereconurl
         jsextractor
