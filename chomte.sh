@@ -288,9 +288,6 @@ function portscanner(){
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
-                csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q
-                csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport &>/dev/null
-                csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport &>/dev/null
                 echo -e ${GREEN}"[+]Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
             else
@@ -317,6 +314,9 @@ function iphttpx(){
     }
 
     httpxcheck(){
+        [ ! -f $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q
+        [ ! -f $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
+        [ ! -f $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport -q &>/dev/null
         echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
         if [ -f "$1" ]; then
             echo -e "${BLUE}[#] cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
@@ -336,12 +336,12 @@ function iphttpx(){
         echo "The file $httpxout does not exist. Running command..."
         
         if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
-            httpxcheck     
+            httpxcheck $1   
         elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
-            httpxcheck            
+            httpxcheck $1          
         elif [ ${hostportscan} == true ] && [ -f $1 ]; then
             declared_paths
-            httpxcheck
+            httpxcheck $1
         else
             echo $1
             echo -e "Need to scan port"
