@@ -366,16 +366,26 @@ function content_discovery(){
             echo -e ""
             echo "$enumscan/contentdiscovery -- Directory is empty, continuing..."
             mkdir -p $enumscan/contentdiscovery
-            interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
+            [ -e $1 ] && interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
+            mergeffufcsv
         else
             echo -e "${RED}ContentDiscovery Directory already exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
-            exit 0
+        fi
+    }
+
+    nuclei_exposure(){
+        echo -e "${YELLOW}[*] Running Nuclei Exposure Scan\n${NC}"
+        echo -e ""
+        if [[ -f "$1" ]]; then
+            nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
+        else
+            nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
         fi
     }
 
     #[[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
-    [[ -f $1 ]] && ffuflist $1 && mergeffufcsv
-    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null
+    [[ -f $1 ]] && ffuflist $1 && nuclei_exposure $1
+    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null && nuclei_exposure $1
 }
 
 function active_recon(){
@@ -388,7 +398,7 @@ function active_recon(){
             echo $url | grep -oE "^https?://[^/]*(:[0-9]+)?"
         done
     }
-
+    # techdetect function can be use to run with manual tools; see below examples; altough nuclei has automatic-scan feature now.
     wordpress_recon(){
         techdetect WordPress | anew $enumscan/wordpress_urls.txt -q
         if [ -s $enumscan/wordpress_urls.txt ];then
@@ -422,8 +432,14 @@ function active_recon(){
         if [ -s $enumscan/jira_urls.txt ];then
             echo -e "${YELLOW}[*] Running Jira Recon on Below URL\n${NC}"
             echo -e ""
-            [ ! -f $enumscan/jira_nuclei_results.txt ] && nuclei -l $enumscan/jira_urls.txt -w ~/nuclei-templates/workflows/drupal-workflow.yaml -o $enumscan/jira_nuclei_results.txt
+            [ ! -f $enumscan/jira_nuclei_results.txt ] && nuclei -l $enumscan/jira_urls.txt -w ~/nuclei-templates/workflows/jira-workflow.yaml -o $enumscan/jira_nuclei_results.txt
         fi
+    }
+
+    auto_nuclei(){
+        echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
+        echo -e ""
+        nuclei -l $potentialsdurls -as -silent | anew $enumscan/nuclei_pot_autoscan.txt
     }
 
     js_recon(){
@@ -431,9 +447,12 @@ function active_recon(){
         ## Thanks to @KathanP19 and Other Community members
         passivereconurl(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said "' SIGINT
-            echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau and Subjs >>${NC} $enumscan/URLs/gau-allurls.txt ${BLUE}and${NC} $enumscan/URLs/subjs-allurls.txt"
+            
+            echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau >>${NC} $enumscan/URLs/gau-allurls.txt"
             cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd -q &>/dev/null 2>&1
             [ ! -f $enumscan/URLs/gau-allurls.txt ] && interlace -tL $urlprobedsd -o $enumscan -cL ./MISC/passive_recon.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering URLs from Gau"
+            
+            echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Subjs >>${NC} $enumscan/URLs/subjs-allurls.txt"
             [ ! -f $enumscan/URLs/subjs-allurls.txt ] && interlace -tL $urlprobed -o $enumscan -c "echo _target_ | subjs | anew _output_/URLs/subjs-allurls.txt -q" --silent &>/dev/null 2>&1 | pv -p -t -e -N "Gathering JS URLs from Subjs"
         }
 
@@ -496,7 +515,7 @@ function active_recon(){
             passivereconurl
             activereconurl
         fi  
-        if [ -s $enumscan/URLs/*-allurls.txt ]; then
+        if [ -s $enumscan/URLs/gau-allurls.txt ]; then
             jsextractor
             pot_url
             validjsurlextractor
@@ -519,6 +538,7 @@ function active_recon(){
     joomla_recon
     drupal_recon
     jira_recon
+    [ ! -f $enumscan/nuclei_pot_autoscan.txt ] && auto_nuclei || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
     [[ ${jsrecon} == true ]] && js_recon
     [[ ${enumxnl} == true ]] && xnl
 
