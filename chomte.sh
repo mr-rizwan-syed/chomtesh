@@ -125,7 +125,6 @@ function declared_paths(){
     subdomains="Results/$project/$domain/subdomains.txt"  
      
     if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
-        echo -e "DOMAINSCAN is $domainscan"
         dnsreconout="Results/$project/$domain/dnsrecon.txt"
         naabuout="Results/$project/$domain/naabu.csv"
         nmapscans="Results/$project/$domain/nmapscans"
@@ -191,7 +190,7 @@ function dnsreconbrute(){
             echo -e "${GREEN}[+] New Unique Subdomains found by bruteforcing${NC}[$dnsbrute_sdc]"
             echo -e "${GREEN}[+] Total Subdomains Enumerated${NC}[$total_sdc]"
         else
-            echo -e "${BLUE}[I] $dnsreconout already exists...SKIPPING...${NC}"
+            echo -e "${BLUE}[I] $dnsreconout already exists${NC}...SKIPPING..."
         fi
     fi
 }
@@ -199,7 +198,7 @@ function dnsreconbrute(){
 function getsubdomains(){
     # Subdomain gathering
     if [ -f ${subdomains} ]; then
-        echo -e "${CYAN}[I] $subdomains already exists...SKIPPING...${NC}"
+        echo -e "${CYAN}[I] $subdomains already exists${NC}...SKIPPING..."
     else [ ! -f ${subdomains} ];
         echo -e ""
         echo -e "${YELLOW}[*] Gathering Subdomains${NC}"
@@ -308,9 +307,10 @@ function iphttpx(){
 
     webtechcheck(){
         webanalyze -update > /dev/null
+        echo -e ""
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
         echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q 2>/dev/null
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q &>/dev/null 2>&1
         echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
     }
 
@@ -333,9 +333,7 @@ function iphttpx(){
         webtechcheck
     }
 
-    if [ ! -f "$httpxout" ]; then
-        echo "The file $httpxout does not exist. Running command..."
-        
+    if [ ! -f "$httpxout" ]; then        
         if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
             httpxcheck $1   
         elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
@@ -348,7 +346,7 @@ function iphttpx(){
             echo -e "Need to scan port"
         fi
     else
-        echo -e "${CYAN}The file $httpxout already exists. Skipping command...${NC}"
+        echo -e "${CYAN}[I] $httpxout already exists${NC}...SKIPPING..."
     fi
 }    
 
@@ -370,7 +368,7 @@ function content_discovery(){
             mkdir -p $enumscan/contentdiscovery
             interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent &>/dev/null 2>&1 | pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist"
         else
-            echo -e "${RED}ContentDiscover Directory Already Exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
+            echo -e "${RED}ContentDiscovery Directory already exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
             exit 0
         fi
     }
@@ -494,7 +492,7 @@ function active_recon(){
             [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
         }
 
-        if [ -s $urlprobed  ] && [ -s $urlprobedsd ]; then
+        if [ -s $urlprobed ]; then
             passivereconurl
             activereconurl
         fi  
