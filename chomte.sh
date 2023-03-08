@@ -223,6 +223,22 @@ function getsubdomains(){
     fi
 }
 
+subdomaintakeover(){
+    trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+    echo -e ""
+    echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
+    
+    if [ -e $urlprobed ]; then
+        echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
+        [ ! -e $enumscan/nuclei-takeover.txt ] && nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
+    fi
+
+    if [ -e $subdomains ]; then
+        echo -e "${BLUE}[#] subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
+        [ ! -e $enumscan/subjack-takeover.txt ] && subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt 2>/dev/null
+    fi
+}
+
 function nmapconverter(){
     # Convert to csv
     ls $nmapscans/*.xml | xargs -I {} python3 $PWD/MISC/xml2csv.py -f {} -csv {}.csv &>/dev/null 
@@ -283,23 +299,19 @@ function portscanner(){
         # else run naabu to initiate port scan
         # start from here
         else
-            echo $ip
             if [ -f "$1" ]; then
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
-                naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
+                naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 echo -e ${GREEN}"[+]Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
             else
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"[#] naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
-                naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" > /dev/null
-                cat $naabuout | cut -d ',' -f 2 | grep -v ip | anew $aliveip -q
-                csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport
+                naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 echo -e ${GREEN}"[+]Quick Port Scan Completed$naabuout" ${NC}
                 nmapscanner
 	        fi
-            mkdir -p $nmapscans
         fi
 }
 
@@ -310,7 +322,7 @@ function iphttpx(){
         echo -e ""
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
         echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q &>/dev/null 2>&1
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q &>/dev/null 2>&1 | pv -p -t -e -N "Running WebTechCheck"
         echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
     }
 
@@ -374,6 +386,7 @@ function content_discovery(){
     }
 
     nuclei_exposure(){
+        trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
         echo -e "${YELLOW}[*] Running Nuclei Exposure Scan\n${NC}"
         echo -e ""
         if [[ -f "$1" ]]; then
@@ -438,6 +451,7 @@ function active_recon(){
 
     auto_nuclei(){
         echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
+        echo "${BLUE}[#] nuclei -l $potentialsdurls -as -silent | anew $enumscan/nuclei_pot_autoscan.txt ${NC}"
         echo -e ""
         nuclei -l $potentialsdurls -as -silent | anew $enumscan/nuclei_pot_autoscan.txt
     }
@@ -561,7 +575,12 @@ function rundomainscan(){
         fi
         if [[ ${enum} == true ]];then
             mkdir -p $enumscan
-            [[ ${httpxout} ]] && active_recon
+            [[ -e ${httpxout} ]] && active_recon
+            # activescan $httpxout
+        fi
+        if [[ ${takeover} == true ]];then
+            mkdir -p $enumscan
+            [[ -e $subdomains ]] && subdomaintakeover
             # activescan $httpxout
         fi
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
@@ -623,6 +642,10 @@ while [[ $# -gt 0 ]]; do
     -d|--domain)
       domain="$2"
       domainscan=true
+      shift 
+      ;;
+    -sto|--takeover)
+      takeover=true
       shift 
       ;;
     -i|--ip)
