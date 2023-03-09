@@ -180,26 +180,6 @@ function declared_paths(){
 }
 
 ####################################################################
-function dnsreconbrute(){
-    # DNS Subdomain Bruteforcing
-    if [[ "${dnsbrute}" == true ]]; then
-        if [ ! -f "${dnsreconout}" ]; then
-            echo -e ""
-            echo -e "${YELLOW}[*] Bruteforcing Subdomains DNSRecon${NC}"
-            echo -e "${BLUE}dmut -u "$domain" $dmut_flags -o $dnsreconout ${NC}"
-            dmut --update-files &>/dev/null
-            dmut -u "$domain" $dmut_flags -o $dnsreconout
-            dnsbrute_sdc=$(cat $dnsreconout | anew $subdomains | wc -l)
-            total_sdc=$(cat $subdomains | wc -l)
-            echo -e "${GREEN}[+] New Unique Subdomains found by bruteforcing${NC}[$dnsbrute_sdc]"
-            echo -e "${GREEN}[+] Total Subdomains Enumerated${NC}[$total_sdc]"
-        else
-            echo -e "${BLUE}[I] $dnsreconout already exists${NC}...SKIPPING..."
-        fi
-    fi
-}
-
-
 
 function getsubdomains(){
     # Subdomain gathering
@@ -225,11 +205,24 @@ function getsubdomains(){
             echo -e "${GREEN}[+] Total Subdomains Collected ${NC}[$total_sdc]"
         }
 
+        function dnsreconbrute(){
+        # DNS Subdomain Bruteforcing
+                echo -e ""
+                echo -e "${YELLOW}[*] Bruteforcing Subdomains DNSRecon${NC}"
+                echo -e "${BLUE}dmut -u "$domain" $dmut_flags -o $dnsreconout ${NC}"
+                dmut --update-files &>/dev/null
+                [ ! -e $dnsreconout ] && dmut -u "$domain" $dmut_flags -o $dnsreconout
+                dnsbrute_sdc=$(cat $dnsreconout | anew $subdomains | wc -l)
+                total_sdc=$(cat $subdomains | wc -l)
+                echo -e "${GREEN}[+] New Unique Subdomains found by bruteforcing${NC}[$dnsbrute_sdc]"
+                echo -e "${GREEN}[+] Total Subdomains Enumerated${NC}[$total_sdc]"
+        }
+
         subdomaintakeover(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e ""
             echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
-            
+            mkdir -p $enumscan
             if [ -e $urlprobed ]; then
                 echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
                 [ ! -e $enumscan/nuclei-takeover.txt ] && nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
@@ -241,11 +234,10 @@ function getsubdomains(){
             fi
         }
 
-        [ "$jsd" = true ] && runjsubfinder
-        if [[ ${takeover} == true ]];then
-            mkdir -p $enumscan
-            [[ -e $subdomains ]] && subdomaintakeover
-        fi
+        [ ${jsd} == true ] && runjsubfinder
+        [ ${dnsbrute} == true ] && dnsreconbrute
+        [ ${takeover} == true ] && subdomaintakeover
+
     fi
 }
 
@@ -336,7 +328,7 @@ function iphttpx(){
         echo -e ""
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
         echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q 2>/dev/null | pv -p -t -e -N "Running WebTechCheck"
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q 2>/dev/null &>/dev/null | pv -p -t -e -N "Running WebTechCheck"
         echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
     }
 
@@ -580,7 +572,6 @@ function rundomainscan(){
         echo -e "Domain Module $domain $domainscan - Domain Specified"
         mkdir -p Results/$project/$domain
         getsubdomains $domain
-        dnsreconbrute
         portscanner $subdomains
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
@@ -635,6 +626,8 @@ function runipscan(){
 #######################################################################
 
 #########################################################################
+
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
