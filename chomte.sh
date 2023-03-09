@@ -199,6 +199,8 @@ function dnsreconbrute(){
     fi
 }
 
+
+
 function getsubdomains(){
     # Subdomain gathering
     if [ -f ${subdomains} ]; then
@@ -223,25 +225,31 @@ function getsubdomains(){
             echo -e "${GREEN}[+] Total Subdomains Collected ${NC}[$total_sdc]"
         }
 
+        subdomaintakeover(){
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+            echo -e ""
+            echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
+            
+            if [ -e $urlprobed ]; then
+                echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
+                [ ! -e $enumscan/nuclei-takeover.txt ] && nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
+            fi
+
+            if [ -e $subdomains ]; then
+                echo -e "${BLUE}[#] subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
+                [ ! -e $enumscan/subjack-takeover.txt ] && subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt 2>/dev/null
+            fi
+        }
+
         [ "$jsd" = true ] && runjsubfinder
+        if [[ ${takeover} == true ]];then
+            mkdir -p $enumscan
+            [[ -e $subdomains ]] && subdomaintakeover
+        fi
     fi
 }
 
-subdomaintakeover(){
-    trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
-    echo -e ""
-    echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
-    
-    if [ -e $urlprobed ]; then
-        echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
-        [ ! -e $enumscan/nuclei-takeover.txt ] && nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
-    fi
 
-    if [ -e $subdomains ]; then
-        echo -e "${BLUE}[#] subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
-        [ ! -e $enumscan/subjack-takeover.txt ] && subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt 2>/dev/null
-    fi
-}
 
 function nmapconverter(){
     # Convert to csv
@@ -271,6 +279,7 @@ function portscanner(){
             then
                 echo -e "No Ports found for $iphost"
             else
+                echo -e ""
                 echo -e ${CYAN}"[$] Running Nmap Scan on"${NC} $iphost ======${CYAN} $ports ${NC}
                 if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
                     echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
@@ -304,6 +313,7 @@ function portscanner(){
         # starts from here
         else
             if [ -f "$1" ]; then
+                echo -e ""
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
@@ -326,7 +336,7 @@ function iphttpx(){
         echo -e ""
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}" 
         echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q &>/dev/null 2>&1 | pv -p -t -e -N "Running WebTechCheck"
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech -q 2>/dev/null | pv -p -t -e -N "Running WebTechCheck"
         echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
     }
 
@@ -390,13 +400,13 @@ function content_discovery(){
     }
 
     nuclei_exposure(){
-        trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+        trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
         echo -e "${YELLOW}[*] Running Nuclei Exposure Scan\n${NC}"
         echo -e ""
         if [[ -f "$1" ]]; then
-            nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
+            [ ! -e $enumscan/contentdiscovery/nuclei-exposure.txt ] && nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
         else
-            nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
+             [ ! -e $enumscan/contentdiscovery/nuclei-exposure.txt ] && nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
         fi
     }
 
@@ -464,7 +474,7 @@ function active_recon(){
         echo -e "${YELLOW}[*] Performing JS Recon from Webpage and Javascript on $domain ${NC}"
         ## Thanks to @KathanP19 and Other Community members
         passivereconurl(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said "' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC} "' SIGINT
             
             echo -e "${BLUE}[*] Gathering URLs - Passive Recon using Gau >>${NC} $enumscan/URLs/gau-allurls.txt"
             cat $urlprobed | awk -F[/:] '{print $4}' | anew $urlprobedsd -q &>/dev/null 2>&1
@@ -475,56 +485,56 @@ function active_recon(){
         }
 
         activereconurl(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $enumscan/URLs/katana-allurls.txt"
             [ ! -f $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
         }
         
         pot_url(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Taking out Potential URLs >>${NC} $enumscan/URLs/potentialurls.txt"
             [ ! -f $enumscan/URLs/potentialurls.txt ] && cat $enumscan/URLs/*-allurls.txt | gf excludeExt | anew $enumscan/URLs/potentialurls.txt -q &>/dev/null 2>&1
         }
 
         jsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Extracting JS URLs >>${NC} $enumscan/URLs/*-allurls.txt"
             [ ! -f $enumscan/URLs/alljsurls.txt ] && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
         }
         
         validjsurlextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Finding All Valid JS URLs >>${NC} $enumscan/URLs/validjsurls.txt"
             [ ! -f $enumscan/URLs/validjsurls.txt ] && cat $enumscan/URLs/alljsurls.txt| python3 ./MISC/antiburl.py -N &>/dev/null 2>&1 | grep '^200' | awk '{print $2}' | anew $enumscan/URLs/validjsurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Finding All Valid JS URLs "
         }
         
         endpointsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Enumerating Endpoints from valid JS files >> ${NC}$enumscan/URLs/endpointsfromjs.txt"
             [ ! -f $enumscan/URLs/endpointsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 ./MISC/LinkFinder/linkfinder.py -d -i '_target_' -o cli | anew $enumscan/URLs/endpointsfromjs_tmp.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Endpoints from valid js files"
             [ -f $enumscan/URLs/endpointsfromjs_tmp.txt ] && cat $enumscan/URLs/endpointsfromjs_tmp.txt | grep -vE 'Running against|Invalid input' | anew $enumscan/URLs/endpointsfromjs.txt -q &>/dev/null 2>&1 && rm $enumscan/URLs/endpointsfromjs_tmp.txt
         }
         
         secretsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Enumerating Secrets from valid JS files >> ${NC}$enumscan/URLs/secretsfromjs.txt"
             [ ! -f $enumscan/URLs/secretsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli | anew $enumscan/URLs/secretsfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Secrets from valid js files"
         }
 
         domainfromjsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Enumerating Domains from valid JS files >> ${NC}$enumscan/URLs/domainfromjs.txt"
             [ ! -f $enumscan/URLs/domainfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli  -r "\S+$domain" &>/dev/null 2>&1| anew $enumscan/URLs/domainfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Enumerating Domain from valid js files"
         }
         
         wordsfromjsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Gathering Words from valid JS files >> ${NC}$enumscan/URLs/wordsfromjs.txt"
             [ ! -f $enumscan/URLs/wordsfromjs.txt ] && cat $enumscan/URLs/validjsurls.txt | python3 ./MISC/getjswords.py &>/dev/null 2>&1 | anew $enumscan/URLs/wordsfromjs.txt &>/dev/null 2>&1 | pv -p -t -e -N "Gathering words from valid js files"
         }
 
         varjsurlsextractor(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said"' SIGINT
+            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Gathering Variables from valid JS files >> ${NC}$enumscan/URLs/varfromjs.txt"
             [ ! -f $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" &>/dev/null 2>&1 | pv -p -t -e -N "Gathering Variables from valid js files"
         }
@@ -581,11 +591,7 @@ function rundomainscan(){
             mkdir -p $enumscan
             [[ -e ${httpxout} ]] && active_recon
         fi
-        if [[ ${takeover} == true ]];then
-            mkdir -p $enumscan
-            [[ -e $subdomains ]] && subdomaintakeover
 
-        fi
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
         echo -e "Domain Module $domain $domainscan - List Specified"
         domainlist=true
