@@ -17,7 +17,7 @@ CHOMTE.SH is a shell script that automates reconnaissance during penetration tes
 
 <br>
 
-![alt text](https://i.imgur.com/CGIuS5z.png)
+![alt text](https://i.imgur.com/q1UqZMC.png)
 
 ## Features
 CHOMTE.SH has the following features:
@@ -44,6 +44,7 @@ To use CHOMTE.SH, run the script with the following flags:
 ```
 └─# ./chomte.sh
 
+
  ██████╗██╗  ██╗ ██████╗ ███╗   ███╗████████╗███████╗   ███████╗██╗  ██╗
 ██╔════╝██║  ██║██╔═══██╗████╗ ████║╚══██╔══╝██╔════╝   ██╔════╝██║  ██║
 ██║     ███████║██║   ██║██╔████╔██║   ██║   █████╗     ███████╗███████║
@@ -55,24 +56,28 @@ To use CHOMTE.SH, run the script with the following flags:
 ~~~~~~~~~~~
  U S A G E
 ~~~~~~~~~~~
-Usage: ./chomte.sh -p <ProjectName> -d <domain.com> -i <127.0.0.1> -brt -n
+Usage: ./chomte.sh -p <ProjectName> -d <domain.com> [option]
 Usage: ./chomte.sh -p <ProjectName> -i <127.0.0.1> [option]
-Usage: ./chomte.sh -p projectname -d example.com -brt
+Usage: ./chomte.sh -p projectname -d example.com -brt -jsd -sto -n -cd -e -js -ex
 Usage: ./chomte.sh -p projectname -d Domains-list.txt
 Usage: ./chomte.sh -p projectname -i 127.0.0.1
-Usage: ./chomte.sh -p projectname -i IPs-list.txt -n
+Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex
 
   Mandatory Flags:
-    -p   | --project         : Specify Project Name here
-    -d   | --domain          : Specify Root Domain here / Domain List here
-    -i   | --ip              : Specify IP / CIDR/ IPlist here
+    -p   | --project                : Specify Project Name here
+    -d   | --domain                 : Specify Root Domain here / Domain List here
+    -i   | --ip                     : Specify IP / CIDR/ IPlist here
  Optional Flags
-    -n   | --nmap            : Nmap Scan against open ports
-    -brt | --dnsbrute        : DNS Recon Bruteforce
-    -hpl | --hostportlist    : HTTP Probing on Host:Port List
-    -e   | --enum            : Active Recon
-    -jsd | --jsubfinder      : Get Subdomains from WebPage and JS file by crawling
-    -h   | --help            : Show this help
+    -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling
+    -sto | --takeover               : Subdomain Takeover Scan; Only applicable with domain -d flag
+    -brt | --dnsbrute               : DNS Recon Bruteforce; Only applicable with domain -d flag
+    -n   | --nmap                   : Nmap Scan against open ports
+    -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List
+    -cd  | --content                : Content Discovery Scan
+    -e   | --enum                   : Active Recon
+       -js  | --jsrecon                : JS Recon; applicable with enum -e flag
+       -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag
+    -h   | --help                   : Show this help
 ```
 
 ```
