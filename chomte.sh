@@ -49,24 +49,28 @@ print_usage() {
   echo "~~~~~~~~~~~"
   echo " U S A G E"
   echo "~~~~~~~~~~~"
-  echo "Usage: ./chomte.sh -p <ProjectName> -d <domain.com> -i <127.0.0.1> -brt -n"
+  echo "Usage: ./chomte.sh -p <ProjectName> -d <domain.com> [option]"
   echo "Usage: ./chomte.sh -p <ProjectName> -i <127.0.0.1> [option]"
-  echo "Usage: ./chomte.sh -p projectname -d example.com -brt"
+  echo "Usage: ./chomte.sh -p projectname -d example.com -brt -jsd -sto -n -cd -e -js -ex "
   echo "Usage: ./chomte.sh -p projectname -d Domains-list.txt"
   echo "Usage: ./chomte.sh -p projectname -i 127.0.0.1"
-  echo "Usage: ./chomte.sh -p projectname -i IPs-list.txt -n"
+  echo "Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex"
   echo "${NC}"
   echo "  Mandatory Flags:"
-  echo "    -p   | --project         : Specify Project Name here"
-  echo "    -d   | --domain          : Specify Root Domain here / Domain List here"
-  echo "    -i   | --ip              : Specify IP / CIDR/ IPlist here"
+  echo "    -p   | --project                : Specify Project Name here"
+  echo "    -d   | --domain                 : Specify Root Domain here / Domain List here"
+  echo "    -i   | --ip                     : Specify IP / CIDR/ IPlist here"
   echo " Optional Flags "
-  echo "    -n   | --nmap            : Nmap Scan against open ports"
-  echo "    -brt | --dnsbrute        : DNS Recon Bruteforce"
-  echo "    -hpl | --hostportlist    : HTTP Probing on Host:Port List "
-  echo "    -e   | --enum            : Active Recon "
-  echo "    -jsd | --jsubfinder      : Get Subdomains from WebPage and JS file by crawling "
-  echo "    -h   | --help            : Show this help"
+  echo "    -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling"
+  echo "    -sto | --takeover               : Subdomain Takeover Scan; Only applicable with domain -d flag"
+  echo "    -brt | --dnsbrute               : DNS Recon Bruteforce; Only applicable with domain -d flag"
+  echo "    -n   | --nmap                   : Nmap Scan against open ports"
+  echo "    -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List"
+  echo "    -cd  | --content                : Content Discovery Scan"
+  echo "    -e   | --enum                   : Active Recon"
+  echo "       -js  | --jsrecon                : JS Recon; applicable with enum -e flag"
+  echo "       -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag"  
+  echo "    -h   | --help                   : Show this help"
   echo ""
   echo "${NC}"
   exit
@@ -297,7 +301,7 @@ function portscanner(){
             csvcut -c ip $naabuout | grep -v ip | anew $aliveip
             nmapscanner
         # else run naabu to initiate port scan
-        # start from here
+        # starts from here
         else
             if [ -f "$1" ]; then
                 echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
@@ -576,18 +580,16 @@ function rundomainscan(){
         if [[ ${enum} == true ]];then
             mkdir -p $enumscan
             [[ -e ${httpxout} ]] && active_recon
-            # activescan $httpxout
         fi
         if [[ ${takeover} == true ]];then
             mkdir -p $enumscan
             [[ -e $subdomains ]] && subdomaintakeover
-            # activescan $httpxout
+
         fi
     elif [ -n "${domain}" ] && [ -f "${domain}" ];then
         echo -e "Domain Module $domain $domainscan - List Specified"
         domainlist=true
         declared_paths
-        # Running Functions
         portscanner $domain
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
@@ -597,7 +599,6 @@ function rundomainscan(){
         if [[ ${enum} == true ]];then
             mkdir -p $enumscan
             [[ ${httpxout} ]] && active_recon
-            # activescan $httpxout
         fi
     else
         echo -e "${RED}[-] Domain / Domain List not specified.. Check -d again${NC}"
