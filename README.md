@@ -17,7 +17,7 @@ CHOMTE.SH is a shell script that automates reconnaissance during penetration tes
 
 <br>
 
-![alt text](https://i.imgur.com/q1UqZMC.png)
+![alt text](https://i.imgur.com/aWcTIJr.png)
 
 ## Features
 CHOMTE.SH has the following features:
@@ -66,23 +66,26 @@ Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex
   Mandatory Flags:
     -p   | --project                : Specify Project Name here
     -d   | --domain                 : Specify Root Domain here / Domain List here
+      OR
     -i   | --ip                     : Specify IP / CIDR/ IPlist here
- Optional Flags
-    -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling
-    -sto | --takeover               : Subdomain Takeover Scan; Only applicable with domain -d flag
-    -brt | --dnsbrute               : DNS Recon Bruteforce; Only applicable with domain -d flag
-    -n   | --nmap                   : Nmap Scan against open ports
+      OR
     -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List
+
+Optional Flags - Only applicable with domain -d flag
+
+    -brt | --dnsbrute               : DNS Recon Bruteforce
+    -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling
+    -sto | --takeover               : Subdomain Takeover Scan
+
+Global Flags - Applicable with both -d / -i
+    -n   | --nmap                   : Nmap Scan against open ports
     -cd  | --content                : Content Discovery Scan
+    -cd  | --content subdomains.txt :Content Discovery Scan
     -e   | --enum                   : Active Recon
        -js  | --jsrecon                : JS Recon; applicable with enum -e flag
        -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag
     -h   | --help                   : Show this help
-```
 
-```
-./chomte.sh -p <ProjectName> -d <domain.com> -i <127.0.0.1> -brt -n
-./chomte.sh -p <ProjectName> -i <127.0.0.1> [option]
 ```
 ### Mandatory Flags
 - -p or --project: Specify the project name here.
