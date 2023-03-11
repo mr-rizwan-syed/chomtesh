@@ -98,7 +98,7 @@ dependency_installer(){
 
     if ! command_exists qsinject; then
         echo "${YELLOW}[*] Installing qsinject ${NC}"
-        go install github.com/ameenmaali/qsinject@latestt > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: qsinject"
+        go install github.com/ameenmaali/qsinject@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: qsinject"
     fi
 
     if ! command_exists qsreplace; then
@@ -142,7 +142,7 @@ dependency_installer(){
         if ! command_exists unzip; then 
             apt install unzip -y &>/dev/null
         fi
-        unzip /opt/tools/naabu/naabu_2.1.2_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
+        unzip /opt/tools/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
         mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
     fi
 
