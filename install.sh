@@ -66,7 +66,7 @@ dependency_installer(){
     fi
 
     if ! command_exists gau; then
-        echo "${YELLOW}[*] Installing gau"
+        echo "${YELLOW}[*] Installing gau${NC}"
         go install github.com/lc/gau/v2/cmd/gau@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: gau"
     fi
 
@@ -88,7 +88,7 @@ dependency_installer(){
     if ! command_exists gf; then
         echo "${YELLOW}[*] Installing gf ${NC}"
         go install github.com/tomnomnom/gf@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: gf"
-        git clone https://github.com/1ndianl33t/Gf-Patterns ~/.gf
+        git clone https://github.com/1ndianl33t/Gf-Patterns ~/.gf > /dev/null 2>&1
     fi
 
     if ! command_exists jsubfinder; then
@@ -139,7 +139,9 @@ dependency_installer(){
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
         # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
         wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P ./MISC/naabu &>/dev/null
-        [ ! command_exists unzip ] && apt install unzip -y &>/dev/null
+        if ! command_exists unzip; then 
+            apt install unzip -y &>/dev/null
+        fi
         unzip /opt/tools/naabu/naabu_2.1.2_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
         mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
     fi
@@ -147,10 +149,10 @@ dependency_installer(){
     if ! command_exists interlace; then
         echo "${YELLOW}[*] Installing Interlace ${NC}"
         git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/ &>/dev/null
-        pip3 install -r ./MISC/Interlace/requirements.txt &>/dev/null
-        apt install python3-netaddr &>/dev/null
-        apt install python3-tqdm &>/dev/null
-        cd ./MISC/Interlace/ && python3 setup.py install && cd - &>/dev/null
+        pip3 install -r ./MISC/Interlace/requirements.txt > /dev/null 2>&1
+        apt install python3-netaddr > /dev/null 2>&1
+        apt install python3-tqdm > /dev/null 2>&1
+        cd ./MISC/Interlace/ && python3 setup.py install && cd - > /dev/null 2>&1
     fi  
 
     if ! command_exists ansi2html; then
