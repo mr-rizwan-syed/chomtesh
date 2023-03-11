@@ -142,7 +142,7 @@ dependency_installer(){
         if ! command_exists unzip; then 
             apt install unzip -y &>/dev/null
         fi
-        unzip /opt/tools/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
+        unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
         mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
     fi
 
