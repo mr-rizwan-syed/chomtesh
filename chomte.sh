@@ -192,7 +192,7 @@ function getsubdomains(){
     # Subdomain gathering
         echo -e ""
         echo -e "${YELLOW}[*] Gathering Subdomains${NC}"
-        echo -e "${BLUE}[*] subfinder -d $1 | anew $subdomains ${NC}"
+        echo -e "${BLUE}[#] subfinder -d $1 | anew $subdomains ${NC}"
         [ ! -e $subdomains ] && subfinder -d $1 | anew $subdomains &>/dev/null 2>&1
         sdc=$(<$subdomains wc -l)
         echo -e "${GREEN}[+] Subdomains Collected ${NC}[$sdc]"
@@ -372,7 +372,7 @@ function iphttpx(){
             httpxcheck $1   
         elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
             httpxcheck $1          
-        elif [ ${hostportscan} == true ] && [ -f $1 ]; then
+        elif [[ $hostportscan == true ]] && [ -f $1 ]; then
             declared_paths
             httpxcheck $1
         else
@@ -506,7 +506,7 @@ function active_recon(){
         activereconurl(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Gathering URLs - Active Recon using Katana >>${NC} $enumscan/URLs/katana-allurls.txt"
-            [ ! -e $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
+            [ ! -e $enumscan/URLs/katana-allurls.txt ] && katana -list $urlprobed -d 10 -c 50 -p 20 -ef "ttf,woff,woff2,svg,jpeg,jpg,png,ico,gif,css" -jc -kf robotstxt,sitemapxml -aff -silent | anew $enumscan/URLs/katana-allurls.txt -q &>/dev/null 2>&1 | pv -p -t -e -N "Katana is running"
         }
         
         pot_url(){
