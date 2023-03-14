@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Scans
 #author:        R12W4N
-#version:       3.6.2
+#version:       3.6.6
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -125,7 +125,7 @@ function var_checker(){
 
         [[ ${domainscan} == true ]] && rundomainscan
         [[ ${ipscan} == true ]] && runipscan     
-        [[ ${hostportscan} == true ]] && iphttpx $hostportlist
+        [[ ${hostportscan} == true ]] && runhostportscan
 
     else
         echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d${NC}"    
@@ -255,27 +255,31 @@ function getsubdomains(){
 
 
 function nmapconverter(){
+    rm $nmapscans/*.html &>/dev/null 
+    rm $nmapscans/*.csv &>/dev/null 
+
     # Convert to csv
     ls $nmapscans/*.xml | xargs -I {} python3 $PWD/MISC/xml2csv.py -f {} -csv {}.csv &>/dev/null 
     echo -e "${GREEN}[+] All Nmap CSV Generated ${NC}"
     
     # Merge all csv
     first_file=$(ls $nmapscans/*.csv | head -n 1)
-    head -n 1 "$first_file" > $nmapscans/Nmap_Final_Merged.csv
-    tail -q -n +2 $nmapscans/*.csv >> $nmapscans/Nmap_Final_Merged.csv
-    echo -e "${GREEN}[+] Merged Nmap CSV Generated $nmapscans/Nmap_Final_Merged.csv${NC}[$sdc]"
+    [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && head -n 1 "$first_file" > $nmapscans/Nmap_Final_Merged.csv
+    [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && tail -q -n +2 $nmapscans/*.csv >> $nmapscans/Nmap_Final_Merged.csv
+    echo -e "${GREEN}[+] Merged Nmap CSV Generated ${NC}$nmapscans/Nmap_Final_Merged.csv"
 
     # Generating HTML Report Format
-    ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {}
+    ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {} 2>$nmapscans/error.log
     echo -e "${GREEN}[+] HTML Report Format Generated ${NC}"
     
     # Generating RAW Colored HTML Format
-    ls $nmapscans/*.nmap | xargs -I {} sh -c 'cat {} | ccze -A | ansi2html > {}_nmap_raw_colored.html'
+    ls $nmapscans/*.nmap | xargs -I {} sh -c 'cat {} | ccze -A | ansi2html > {}_nmap_raw_colored.html' 2>$nmapscans/error.log
     echo -e "${GREEN}[+] HTML RAW Colored Format Generated ${NC}"
 }
 
 function portscanner(){
     # Port Scanning Start with Nmap
+    trap 'echo -e "${RED}Ctrl + C detected in Nmap scanner${NC}"; nmapconverter;exit' SIGINT
     scanner(){
         ports=$(cat $ipport| grep $iphost | cut -d ':' -f 2 | xargs | sed -e 's/ /,/g')
             if [ -z "$ports" ]
@@ -287,7 +291,7 @@ function portscanner(){
                 if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
                     echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
                 else
-                    nmap $iphost -p $ports $nmap_flags -oX $nmapscans/nmapresult-$iphost.xml -oN $nmapscans/nmapresult-$iphost.nmap &>/dev/null
+                    [ ! -e $nmapscans/nmapresult-$iphost.nmap ] && nmap $iphost -p $ports $nmap_flags -oX $nmapscans/nmapresult-$iphost.xml -oN $nmapscans/nmapresult-$iphost.nmap &>/dev/null
                 fi            
             fi
         }
@@ -307,8 +311,12 @@ function portscanner(){
             fi
         }
         # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
-        
-        if [ -f "$naabuout" ]; then
+        if [[ $hostportscan == true ]] && [ -f $1 ]; then
+            declared_paths
+            cat $hostportlist | cut -d : -f 1 | anew $aliveip -q &>/dev/null
+            ipport=$hostportlist
+            nmapscanner
+        elif [ -f "$naabuout" ]; then
             echo -e "${CYAN}[I] $naabuout already exists${NC}...SKIPPING..."
             [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
             [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
@@ -355,10 +363,10 @@ function iphttpx(){
         echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
         if [ -f "$1" ]; then
             echo -e "${BLUE}[#] cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            [ ! -e $httpxout ] && cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
         else
             echo "${BLUE}[#] echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            [ ! -e $httpxout ] && echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
         fi
         csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
         csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsdurls
@@ -367,10 +375,10 @@ function iphttpx(){
         webtechcheck
     }
 
-    if [ ! -f "$httpxout" ]; then        
-        if [ -f "$naabuout" ] && [ -f "$1" ] && [ ! -f $httpxout ]; then
+    if [ ! -e "$httpxout" ]; then        
+        if [ -e "$naabuout" ] && [ -f "$1" ]; then
             httpxcheck $1   
-        elif [ -f "$naabuout" ] && [ ! -f "$1" ] && [ ! -f $httpxout ]; then
+        elif [ -e "$naabuout" ] && [ ! -f "$1" ]; then
             httpxcheck $1          
         elif [[ $hostportscan == true ]] && [ -f $1 ]; then
             declared_paths
@@ -387,7 +395,7 @@ function iphttpx(){
 function content_discovery(){
     mergeffufcsv(){
         echo -e "${YELLOW}[*] Merging All Content Discovery Scan CSV - ${NC}\n"
-        if [ -d $enumscan/contentdiscovery ]; then
+        if [ -d $enumscan/contentdiscovery ] && [ ! -f $enumscan/contentdiscovery/all-cd.csv ]; then
             cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
             cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' >> $enumscan/contentdiscovery/all-cd.csv
             echo -e "${GREEN}[*] Merged All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
@@ -638,6 +646,26 @@ function runipscan(){
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
             [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
+        fi
+        if [[ ${enum} == true ]];then
+            mkdir -p $enumscan
+            [[ ${httpxout} ]] && active_recon
+            # activescan $httpxout
+        fi
+    else
+        echo -e "${RED}[-] IP not specified.. Check -i again${NC}"
+    fi
+}
+
+function runhostportscan(){
+    if [ -n "${hostportlist}" ];then
+        declared_paths
+        echo HostPortScan Module $hostportscan $hostportlist
+        iphttpx $hostportlist
+        portscanner
+        if [[ ${contentscan} == true ]];then
+            mkdir -p $enumscan
+            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $urlprobed
         fi
         if [[ ${enum} == true ]];then
             mkdir -p $enumscan
