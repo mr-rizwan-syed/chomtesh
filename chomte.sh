@@ -84,13 +84,13 @@ print_usage() {
 }
 
 domaindirectorycheck(){
-    if [ -d Results/$project ]
+    if [ -d $results ]
     then
         echo -e
-        echo -e "${BLUE}[I] Results/$project Directory already exists...\n${NC}"
+        echo -e "${BLUE}[I] $results Directory already exists...\n${NC}"
     else
-        mkdir -p Results/$project
-        echo -e "${BLUE}[I] Results/$project Directory Created\n${NC}" 
+        mkdir -p $results
+        echo -e "${BLUE}[I] $results Directory Created\n${NC}" 
     fi
     
 }
@@ -133,55 +133,56 @@ function var_checker(){
 }
 
 function declared_paths(){
-    subdomains="Results/$project/$domain/subdomains.txt"  
-     
+    results=Results/$project
+    subdomains="$results/$domain/subdomains.txt"
+         
     if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
-        dnsreconout="Results/$project/$domain/dnsrecon.txt"
-        naabuout="Results/$project/$domain/naabu.csv"
-        nmapscans="Results/$project/$domain/nmapscans"
-        aliveip="Results/$project/$domain/aliveip.txt"
-        httpxout="Results/$project/$domain/httpxout.csv"
-        httpxresume="Results/$project/$domain/httpxresume.cfg"
-        webtech="Results/$project/$domain/webtech.csv"
-        hostport="Results/$project/$domain/hostport.txt"
-        ipport="Results/$project/$domain/ipport.txt"
-        urlprobed="Results/$project/$domain/urlprobed.txt"
-        potentialsdurls="Results/$project/$domain/potentialsdurls.txt"
-        urlprobedsd="Results/$project/$domain/urlprobedsd.txt"
-        enumscan="$PWD/Results/$project/$domain/enumscan"
-        jsubfinderout="Results/$project/$domain/jsubfinder.txt"
+        dnsreconout="$results/$domain/dnsrecon.txt"
+        naabuout="$results/$domain/naabu.csv"
+        nmapscans="$results/$domain/nmapscans"
+        aliveip="$results/$domain/aliveip.txt"
+        httpxout="$results/$domain/httpxout.csv"
+        httpxresume="$results/$domain/httpxresume.cfg"
+        webtech="$results/$domain/webtech.csv"
+        hostport="$results/$domain/hostport.txt"
+        ipport="$results/$domain/ipport.txt"
+        urlprobed="$results/$domain/urlprobed.txt"
+        potentialsdurls="$results/$domain/potentialsdurls.txt"
+        urlprobedsd="$results/$domain/urlprobedsd.txt"
+        enumscan="$PWD/$results/$domain/enumscan"
+        jsubfinderout="$results/$domain/jsubfinder.txt"
     fi
 
     if [[ ${ipscan} == true ]];then
         echo -e "IPSCAN is $ipscan"
-        naabuout="Results/$project/naabu.csv"
-        nmapscans="Results/$project/nmapscans"
-        aliveip="Results/$project/aliveip.txt"
-        httpxout="Results/$project/httpxout.csv"
-        webtech="Results/$project/webtech.csv"
-        hostport="Results/$project/hostport.txt"
-        ipport="Results/$project/ipport.txt"
-        urlprobed="Results/$project/urlprobed.txt"
-        potentialsdurls="Results/$project/potentialsdurls.txt"
-        urlprobedsd="Results/$project/urlprobedsd.txt"
-        enumscan="$PWD/Results/$project/enumscan"
+        naabuout="$results/naabu.csv"
+        nmapscans="$results/nmapscans"
+        aliveip="$results/aliveip.txt"
+        httpxout="$results/httpxout.csv"
+        webtech="$results/webtech.csv"
+        hostport="$results/hostport.txt"
+        ipport="$results/ipport.txt"
+        urlprobed="$results/urlprobed.txt"
+        potentialsdurls="$results/potentialsdurls.txt"
+        urlprobedsd="$results/urlprobedsd.txt"
+        enumscan="$PWD/$results/enumscan"
     fi
 
     if [[ ${hostportscan} == true ]] || [[ ${domainlist} == true ]] && [[ -f $hostportlist ]] || [[ -f $domain ]];then
         echo -e "HOSTPORTSCAN is $hostportscan"
-        mkdir -p Results/$project/Domain_List
+        mkdir -p $results/Domain_List
         # Declaring New Paths for Domain List
-        naabuout="Results/$project/Domain_List/naabu.csv"
-        nmapscans="Results/$project/Domain_List/nmapscans"
-        aliveip="Results/$project/Domain_List/aliveip.txt"
-        httpxout="Results/$project/Domain_List/httpxout.csv"
-        webtech="Results/$project/Domain_List/webtech.csv"
-        hostport="Results/$project/Domain_List/hostport.txt"
-        ipport="Results/$project/Domain_List/ipport.txt"
-        urlprobed="Results/$project/Domain_List/urlprobed.txt"
-        potentialsdurls="Results/$project/Domain_List/potentialsdurls.txt"
-        urlprobedsd="Results/$project/Domain_List/urlprobedsd.txt"
-        enumscan="$PWD/Results/$project/Domain_List/enumscan"
+        naabuout="$results/Domain_List/naabu.csv"
+        nmapscans="$results/Domain_List/nmapscans"
+        aliveip="$results/Domain_List/aliveip.txt"
+        httpxout="$results/Domain_List/httpxout.csv"
+        webtech="$results/Domain_List/webtech.csv"
+        hostport="$results/Domain_List/hostport.txt"
+        ipport="$results/Domain_List/ipport.txt"
+        urlprobed="$results/Domain_List/urlprobed.txt"
+        potentialsdurls="$results/Domain_List/potentialsdurls.txt"
+        urlprobedsd="$results/Domain_List/urlprobedsd.txt"
+        enumscan="$PWD/$results/Domain_List/enumscan"
     fi
 
 }
@@ -252,7 +253,11 @@ function getsubdomains(){
     [ "$takeover" == true ] && subdomaintakeover
 }
 
-
+function dnsprobe(){
+    dmut --update-files &>/dev/null
+    [ ! -e $results/$domain/dnsprobe.txt ] && cat $1 | dnsx -a -cname -re -cdn -asn -r /root/.dmut/top20.txt | anew $results/$domain/dnsprobe.txt
+    [ ! -e $results/$domain/dnshosts.txt ] &&  cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print $2}' | anew $results/$domain/dnshosts.txt 2>/dev/null
+}
 
 function nmapconverter(){
     rm $nmapscans/*.html &>/dev/null 
@@ -279,7 +284,7 @@ function nmapconverter(){
 
 function portscanner(){
     # Port Scanning Start with Nmap
-    trap 'echo -e "${RED}Ctrl + C detected in Nmap scanner${NC}"; nmapconverter;exit' SIGINT
+    # trap 'echo -e "${RED}Ctrl + C detected in Nmap scanner${NC}"; nmapconverter;exit' SIGINT
     scanner(){
         ports=$(cat $ipport| grep $iphost | cut -d ':' -f 2 | xargs | sed -e 's/ /,/g')
             if [ -z "$ports" ]
@@ -331,8 +336,20 @@ function portscanner(){
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-                [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
+                
+                # Loop through each IP in aliveip.txt
+                while read -r host; do
+                    ports=$(csvcut -c ip,port $naabuout | sort -u | grep -w "$host" | cut -d , -f 2 | tr '\n' ',' | awk '{print substr($0, 1, length($0)-1)}')
+                    
+                # Loop through each subdomain associated with the current IP and print the open ports for each one
+                    cat "$results/$domain/dnsprobe.txt" | grep -w "$host" | cut -d ' ' -f 1 | while read -r subdomain; do
+                        echo "$ports" | awk -v d="$subdomain" '{split($0,a,","); for(i in a) print d":"a[i]}' | anew $hostport
+                    done
+                done < "$aliveip"
+
+                # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
                 [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport -q &>/dev/null
+
                 echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
             else
@@ -368,9 +385,21 @@ function iphttpx(){
             echo "${BLUE}[#] echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
             [ ! -e $httpxout ] && echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
         fi
+        
         csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed
-        csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsdurls
-        csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsdurls
+        
+        if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]];then
+            echo -e "${YELLOW}[*]Extracting Potential URLs${NC}"
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew $potentialsdurls
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsdurls
+        fi
+        
+        if [[ ${domainscan} == true ]];then
+            echo -e "${YELLOW}[*]Extracting Potential URLs${NC}"
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew $potentialsdurls
+            csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew $potentialsdurls
+        fi
+
         echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
         webtechcheck
     }
@@ -406,6 +435,7 @@ function content_discovery(){
         trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
         echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
         echo -e "${BLUE}[*] interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent ${NC}"
+        echo -e "${BLUE}[*contentdiscovery.il*] ffuf -u _target_/FUZZ -w MISC/dicc.txt -sa -of csv -mc 200,201,202,203,403 -fl 0 -c -ac -recursion -recursion-depth 2 -s -v -o _output_/_cleantarget_-cd.csv ${NC}"
         if [ "$(ls -A $enumscan/contentdiscovery 2>/dev/null)" = "" ]; then
             echo -e ""
             echo "$enumscan/contentdiscovery -- Directory is empty, continuing..."
@@ -605,9 +635,10 @@ function rundomainscan(){
     if [ -n "${domain}" ] && [ ! -f "${domain}" ];then
         declared_paths
         echo -e "Domain Module $domain $domainscan - Domain Specified"
-        mkdir -p Results/$project/$domain
+        mkdir -p $results/$domain
         getsubdomains $domain
-        portscanner $subdomains
+        dnsprobe $subdomains
+        portscanner $results/$domain/dnshosts.txt
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
@@ -622,7 +653,8 @@ function rundomainscan(){
         echo -e "Domain Module $domain $domainscan - List Specified"
         domainlist=true
         declared_paths
-        portscanner $domain
+        dnsprobe $domain
+        portscanner $results/$domain/dnshosts.txt
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
