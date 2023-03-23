@@ -16,7 +16,7 @@ downloadgo=$gowebsite$golatest
 
 goinstaller(){
 	echo "${YELLOW}[*] Installing GO ${NC}"
-        wget $downloadgo -P /tmp/ >/dev/null 2>&1
+        wget $downloadgo -P /tmp/
   	[ ! -d "/usr/local/go" ] && tar -C /usr/local/ -xzf /tmp/$golatest
 	rm /tmp/$golatest
 	echo $shellrc
