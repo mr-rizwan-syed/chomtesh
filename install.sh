@@ -79,6 +79,11 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing httpx ${NC}"
         go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.2.6 > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
     fi
+    
+    if ! command_exists dnsx; then
+        echo "${YELLOW}[*] Installing DNSx ${NC}"
+        go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: DNSX"
+    fi
 
     if ! command_exists anew; then
         echo "${YELLOW}[*] Installing anew ${NC}"
@@ -205,7 +210,7 @@ dependency_installer(){
 
 }
 
-required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -226,18 +231,3 @@ else
     echo -e "${GREEN}All Good - JOD ${NC}"
     echo -e "${CYAN}Run Chomte.sh Now :)${NC}"
 fi
-
-
-
-   
-
-    
-
-
-
-
-
-
-
-
-
