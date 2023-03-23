@@ -34,10 +34,10 @@ CHOMTE.SH has the following features:
 ## Installation
 To install CHOMTE.SH, follow these steps:
 
-1. Install Golang by following the instructions on this [Go Setup](https://tzusec.com/how-to-install-golang-in-kali-linux/).
-2. Clone the repository: `git clone https://github.com/mr-rizwan-syed/chomtesh`
-3. Change the directory: `cd chomtesh`
-4. Make the script executable: `chmod +x *.sh`
+1. Clone the repository: `git clone https://github.com/mr-rizwan-syed/chomtesh`
+2. Change the directory: `cd chomtesh`
+3. Make the script executable: `chmod +x *.sh`
+4. Install Golang manually by following the instructions on this [Go Setup](https://tzusec.com/how-to-install-golang-in-kali-linux/). OR Run  `./goinstaller.sh` 
 5. Run the installation script: `./install.sh`
 6. Run Chomte.sh: `./chomte.sh`
 
@@ -95,11 +95,11 @@ Global Flags - Applicable with both -d / -i
 - -i or --ip: Specify the IP/CIDR/IP list here.
 
 ### Optional Flags
--n or --nmap                  : Nmap scan against open ports.
--brt or --dnsbrute            : DNS Recon Bruteforce.
--hpl or --hostportlist <path> : HTTP Probing on Host:Port List
--cd or --content <path>       : Content Discovery - Path is optional
--e or --enum                  : Active Enum based on technologies
+-n or --nmap                  : Nmap scan against open ports.\
+-brt or --dnsbrute            : DNS Recon Bruteforce.\
+-hpl or --hostportlist <path> : HTTP Probing on Host:Port List\
+-cd or --content <path>       : Content Discovery - Path is optional\
+-e or --enum                  : Active Enum based on technologies\
 -h or --help                  : Show help.
 
 ### Example
