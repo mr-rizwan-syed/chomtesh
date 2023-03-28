@@ -270,7 +270,7 @@ function nmapconverter(){
     # Merge all csv
     first_file=$(ls $nmapscans/*.csv | head -n 1)
     [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && head -n 1 "$first_file" > $nmapscans/Nmap_Final_Merged.csv
-    [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && tail -q -n +2 $nmapscans/*.csv >> $nmapscans/Nmap_Final_Merged.csv
+    [ -e $nmapscans/Nmap_Final_Merged.csv ] && tail -q -n +2 $nmapscans/*.csv >> $nmapscans/Nmap_Final_Merged.csv
     echo -e "${GREEN}[+] Merged Nmap CSV Generated ${NC}$nmapscans/Nmap_Final_Merged.csv"
 
     # Generating HTML Report Format
