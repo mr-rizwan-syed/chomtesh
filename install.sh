@@ -79,11 +79,6 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing httpx ${NC}"
         go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.2.6 > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
     fi
-    
-    if ! command_exists dnsx; then
-        echo "${YELLOW}[*] Installing DNSx ${NC}"
-        go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: DNSX"
-    fi
 
     if ! command_exists anew; then
         echo "${YELLOW}[*] Installing anew ${NC}"
@@ -193,6 +188,13 @@ dependency_installer(){
         python3 ./MISC/waymore/setup.py install &>/dev/null
     fi
 
+    if ! command_exists trufflehog; then
+        echo "${YELLOW}[*] Installing Trufflehog ${NC}"
+        wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.31.2/trufflehog_3.31.2_linux_amd64.tar.gz -P /tmp/ &>/dev/null
+        tar -xvf /tmp/trufflehog* -C /usr/local/bin/ &>/dev/null
+        chmod +x /usr/local/bin/trufflehog
+    fi
+
     if [ ! -d ./MISC/ ]; then
         echo "${YELLOW}[*] Installing xnLinkFinder ${NC}"
         git clone https://github.com/xnl-h4ck3r/xnLinkFinder.git ./MISC/xnLinkFinder &>/dev/null
@@ -210,7 +212,7 @@ dependency_installer(){
 
 }
 
-required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -231,3 +233,18 @@ else
     echo -e "${GREEN}All Good - JOD ${NC}"
     echo -e "${CYAN}Run Chomte.sh Now :)${NC}"
 fi
+
+
+
+   
+
+    
+
+
+
+
+
+
+
+
+
