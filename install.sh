@@ -20,10 +20,10 @@ dependency_installer(){
             apt-get install -y pv &>/dev/null
     fi
 
-        if ! command_exists python3; then
-            echo "${YELLOW}[*] Installing python3 ${NC}"
-            apt install python3 -y  > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: python3"
-        fi
+    if ! command_exists python3; then
+        echo "${YELLOW}[*] Installing python3 ${NC}"
+        apt install python3 -y  > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: python3"
+    fi
 
     if ! command_exists python3-pip; then
         echo "${YELLOW}[*] Installing python3-pip ${NC}"
@@ -77,7 +77,7 @@ dependency_installer(){
 
     if ! command_exists httpx; then
         echo "${YELLOW}[*] Installing httpx ${NC}"
-        go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.2.6 > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
+        go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
     fi
 
     if ! command_exists anew; then
