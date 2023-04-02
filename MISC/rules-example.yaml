@@ -1,0 +1,13 @@
+rules:
+  UrlUpdate:
+    regex: '^http(s)?:\/\/.+'
+    replacement: 'http://cgm3xq62vtc0000x2dpggekb65oyyyyyb.oast.fun'
+    append: false
+  STRING:
+    regex: '^[a-zA-Z0-9]+$'
+    replacement: 'FUZZ'
+    append: false
+  INT:
+    regex: '^-?\d+(?:\.\d+)?$'
+    replacement: '8899'
+    append: false
