@@ -24,9 +24,7 @@ webanalyze_flags=$(grep '^webanalyze_flags=' flags.conf | awk -F= '{print $2}' |
 nmap_flags=$(grep '^nmap_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-wpscan_flags=$(grep '^wpscan_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 
-domain_regex='^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.([a-zA-Z]{2,}|xn--[a-zA-Z0-9]{2,})$'
 
 banner(){
 echo ${GREEN} '
@@ -396,10 +394,10 @@ function iphttpx(){
         echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
         if [ -f "$1" ]; then
             echo -e "${BLUE}[#] cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            [ ! -e $httpxout ] && cat $1 | httpx $httpx_flags -csv -o $httpxout 2>/dev/null | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            [ ! -e $httpxout ] && cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
         else
             echo "${BLUE}[#] echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            [ ! -e $httpxout ] && echo $1 | httpx $httpx_flags -csv -o $httpxout 2>/dev/null | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+            [ ! -e $httpxout ] && echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
         fi      
     }
 
@@ -558,6 +556,8 @@ function active_recon(){
         fi
     }
 
+    # Add your custom function here; Refer above
+    
     auto_nuclei(){
         echo -e ""
         echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
@@ -631,13 +631,13 @@ function active_recon(){
         secretsextractor(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Enumerating Secrets from valid JS files >> ${NC}$enumscan/URLs/secretsfromjs.txt"
-            [ ! -e $enumscan/URLs/secretsfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli | anew $enumscan/URLs/secretsfromjs.txt" | pv -p -t -e -N "Enumerating Secrets from valid js files" >/dev/null
+            [ ! -e $enumscan/URLs/secretsfromjs.txt ] && interlace --silent -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli | anew $enumscan/URLs/secretsfromjs.txt" | pv -p -t -e -N "Enumerating Secrets from valid js files" >/dev/null
         }
 
         domainfromjsextractor(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Enumerating Domains from valid JS files >> ${NC}$enumscan/URLs/domainfromjs.txt"
-            [ ! -e $enumscan/URLs/domainfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli  -r "\S+$domain" &>/dev/null 2>&1| anew $enumscan/URLs/domainfromjs.txt" | pv -p -t -e -N "Enumerating Domain from valid js files" >/dev/null
+            [ ! -e $enumscan/URLs/domainfromjs.txt ] && interlace --silent -tL $enumscan/URLs/validjsurls.txt -c "python3 MISC/SecretFinder/SecretFinder.py -i '_target_' -o cli  -r "\S+$domain" &>/dev/null 2>&1| anew $enumscan/URLs/domainfromjs.txt" | pv -p -t -e -N "Enumerating Domain from valid js files" >/dev/null
         }
         
         wordsfromjsextractor(){
@@ -649,7 +649,7 @@ function active_recon(){
         varjsurlsextractor(){
             trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
             echo -e "${BLUE}[*] Gathering Variables from valid JS files >> ${NC}$enumscan/URLs/varfromjs.txt"
-            [ ! -e $enumscan/URLs/varfromjs.txt ] && interlace -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" | pv -p -t -e -N "Gathering Variables from valid js files" >/dev/null
+            [ ! -e $enumscan/URLs/varfromjs.txt ] && interlace --silent -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ | anew $enumscan/URLs/varfromjs.txt" | pv -p -t -e -N "Gathering Variables from valid js files" >/dev/null
         }
 
         if [ -s $urlprobed ]; then
@@ -690,17 +690,16 @@ function active_recon(){
 ####################################################################
 function rundomainscan(){
     if [ -n "${domain}" ] && [ ! -f "${domain}" ];then
-        [[ "$domain" =~ $domain_regex ]] && domain_valid=true || { echo "Error: invalid domain name"; exit 1; }
         declared_paths
         echo -e "Domain Module $domain $domainscan - Domain Specified"
-        if [ "$domain_valid" = true ]; then
-            echo "Domain is valid"
-            mkdir -p $results/$domain
-            getsubdomains $domain
-            dnsprobe $subdomains
-            portscanner $results/$domain/dnshosts.txt
-            iphttpx $hostport
-        fi
+        
+        echo "Domain is valid"
+        mkdir -p $results/$domain
+        getsubdomains $domain
+        dnsprobe $subdomains
+        portscanner $results/$domain/dnshosts.txt
+        iphttpx $hostport
+        
         
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
