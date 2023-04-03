@@ -79,6 +79,11 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing httpx ${NC}"
         go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.2.6 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
+    
+    if ! command_exists dnsx; then
+        echo "${YELLOW}[*] Installing DNSx ${NC}"
+        go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
+    fi
 
     if ! command_exists anew; then
         echo "${YELLOW}[*] Installing anew ${NC}"
@@ -214,7 +219,7 @@ dependency_installer(){
 
 }
 
-required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
+required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -236,18 +241,3 @@ else
     echo -e "${CYAN}Add subfinder API keys for better results${NC}"
     echo -e "${CYAN}Run Chomte.sh Now :)${NC}"
 fi
-
-
-
-   
-
-    
-
-
-
-
-
-
-
-
-
