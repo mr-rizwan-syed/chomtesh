@@ -20,130 +20,131 @@ dependency_installer(){
             apt-get install -y pv &>/dev/null
     fi
 
-    if ! command_exists python3; then
-        echo "${YELLOW}[*] Installing python3 ${NC}"
-        apt install python3 -y  > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: python3"
-    fi
+        if ! command_exists python3; then
+            echo "${YELLOW}[*] Installing python3 ${NC}"
+            apt install python3 -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3" >/dev/null
+        fi
 
     if ! command_exists python3-pip; then
         echo "${YELLOW}[*] Installing python3-pip ${NC}"
-        apt install python3-pip -y  > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: python3-pip"
+        apt install python3-pip -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3-pip" >/dev/null
     fi
 
     if ! command_exists git; then
         echo "${YELLOW}[*] Installing git ${NC}"
-        apt install git -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: git"
+        apt install git -y 2>/dev/null | pv -p -t -e -N "Installing Tool: git" >/dev/null
     fi
 
     if ! command_exists nmap; then
         echo "${YELLOW}[*] Installing nmap ${NC}"
-        apt install nmap -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: nmap"
+        apt install nmap -y 2>/dev/null | pv -p -t -e -N "Installing Tool: nmap" >/dev/null
     fi
 
     if ! command_exists xsltproc; then
         echo "${YELLOW}[*] Installing xsltproc ${NC}"
-        apt install xsltproc -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: xsltproc"
+        apt install xsltproc -y 2>/dev/null | pv -p -t -e -N "Installing Tool: xsltproc" >/dev/null
     fi
 
     if ! command_exists dirsearch; then
         echo "${YELLOW}[*] Installing dirsearch ${NC}"
-        apt install dirsearch -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: dirsearch"
+        apt install dirsearch -y 2>/dev/null | pv -p -t -e -N "Installing Tool: dirsearch" >/dev/null
     fi
 
     if ! command_exists ffuf; then
         echo "${YELLOW}[*] Installing FFUF ${NC}"
-        go install github.com/ffuf/ffuf/v2@latest
+        go install github.com/ffuf/ffuf/v2@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: FFUF" >/dev/null
     fi
 
     if ! command_exists csvcut; then
         echo "${YELLOW}[*] Installing csvkit ${NC}"
-        apt install csvkit -y > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: csvkit"
+        apt install csvkit -y 2>/dev/null | pv -p -t -e -N "Installing Tool: csvkit" >/dev/null
     fi
 
     if ! command_exists subfinder; then
         echo "${YELLOW}[*] Installing Subfinder ${NC}"
-        go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: subfinder"
+        go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: subfinder" >/dev/null
     fi
 
     if ! command_exists gau; then
         echo "${YELLOW}[*] Installing gau${NC}"
-        go install github.com/lc/gau/v2/cmd/gau@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: gau"
+        go install github.com/lc/gau/v2/cmd/gau@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: gau" >/dev/null
     fi
 
     if ! command_exists waybackurls; then
         echo "${YELLOW}[*] Installing waybackurls ${NC}"
-        go install github.com/tomnomnom/waybackurls@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: waybackurls"
+        go install github.com/tomnomnom/waybackurls@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: waybackurls" >/dev/null
     fi
 
     if ! command_exists httpx; then
         echo "${YELLOW}[*] Installing httpx ${NC}"
-        go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
+        go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.2.6 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
 
     if ! command_exists anew; then
         echo "${YELLOW}[*] Installing anew ${NC}"
-        go install github.com/tomnomnom/anew@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: anew"
+        go install github.com/tomnomnom/anew@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: anew" >/dev/null
     fi
 
     if ! command_exists gf; then
         echo "${YELLOW}[*] Installing gf ${NC}"
-        go install github.com/tomnomnom/gf@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: gf"
+        go install github.com/tomnomnom/gf@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: gf" >/dev/null
         git clone https://github.com/1ndianl33t/Gf-Patterns ~/.gf > /dev/null 2>&1
     fi
 
     if ! command_exists jsubfinder; then
         echo "${YELLOW}[*] Installing jsubfinder ${NC}"
-        go install github.com/ThreatUnkown/jsubfinder@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: jsubfinder"
+        go install github.com/ThreatUnkown/jsubfinder@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: jsubfinder" >/dev/null
     fi
 
     if ! command_exists qsinject; then
         echo "${YELLOW}[*] Installing qsinject ${NC}"
-        go install github.com/ameenmaali/qsinject@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: qsinject"
+        go install github.com/ameenmaali/qsinject@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: qsinject" >/dev/null
     fi
 
     if ! command_exists qsreplace; then
         echo "${YELLOW}[*] Installing qsreplace ${NC}"
-        go install github.com/tomnomnom/qsreplace@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: qsreplace"
+        go install github.com/tomnomnom/qsreplace@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: qsreplace" >/dev/null
     fi
         
     if ! command_exists subjack; then
         echo "${YELLOW}[*] Installing subjack ${NC}"
-        go install github.com/haccer/subjack@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: subjack"
+        go install github.com/haccer/subjack@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: subjack" >/dev/null
     fi
 
     if ! command_exists webanalyze; then
         echo "${YELLOW}[*] Installing webanalyze ${NC}"
-        go install github.com/rverton/webanalyze/cmd/webanalyze@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: webanalyze"
+        go install github.com/rverton/webanalyze/cmd/webanalyze@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: webanalyze" >/dev/null
     fi    
 
     if ! command_exists nuclei; then
         echo "${YELLOW}[*] Installing nuclei ${NC}"
-        go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: nuclei"
+        go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: nuclei" >/dev/null
         nuclei -update
     fi
 
     if ! command_exists dmut; then
         echo "${YELLOW}[*] Installing dmut ${NC}"
-        go install github.com/bp0lr/dmut@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: dmut"
+        go install github.com/bp0lr/dmut@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: dmut" >/dev/null
     fi
 
     if ! command_exists nuclei; then
         echo "${YELLOW}[*] Installing nuclei ${NC}"
-        go install github.com/bp0lr/dmut@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: nuclei" 
+        go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: nuclei"
         nuclei -update &>/dev/null
         nuclei -ut &>/dev/null
     fi
 
     if ! command_exists naabu; then
         echo "${YELLOW}[*] Installing naabu ${NC}"
+        go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: Naabu" &>/dev/null
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
         # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
-        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P ./MISC/naabu &>/dev/null
-        if ! command_exists unzip; then 
-            apt install unzip -y &>/dev/null
-        fi
-        unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
-        mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
+        #wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P ./MISC/naabu &>/dev/null
+        #if ! command_exists unzip; then 
+        #    apt install unzip -y &>/dev/null
+        #fi
+        #unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
+        #mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
     fi
 
     if ! command_exists interlace; then
@@ -158,16 +159,17 @@ dependency_installer(){
     if ! command_exists ansi2html; then
         echo "${YELLOW}[*] Installing ansi2html ${NC}"
         pip3 install ansi2html &>/dev/null
+        sudo apt install colorized-logs
     fi
 
     if ! command_exists subjs; then
         echo "${YELLOW}[*] Installing Subjs ${NC}"
-        go install -v github.com/lc/subjs@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: subjs" 
+        go install -v github.com/lc/subjs@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: subjs" &>/dev/null
     fi
 
     if ! command_exists katana; then
         echo "${YELLOW}[*] Installing Katana ${NC}"
-        go install github.com/projectdiscovery/katana/cmd/katana@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: katana" 
+        go install github.com/projectdiscovery/katana/cmd/katana@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: katana" &>/dev/null
     fi
     
     if [ ! -d ./MISC/LinkFinder ]; then
@@ -203,7 +205,7 @@ dependency_installer(){
 
     if ! command_exists ccze; then
         echo "${YELLOW}[*] Installing CCZE ${NC}"
-        apt install ccze > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: ccze" 
+        apt install ccze -y 2>/dev/null  | pv -p -t -e -N "Installing Tool: ccze" &>/dev/null
     fi
 
     [ ! -e ./MISC/dicc.txt ] && wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P ./MISC/ > /dev/null 2>&1
@@ -231,6 +233,7 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
 else
     echo -e ""
     echo -e "${GREEN}All Good - JOD ${NC}"
+    echo -e "${CYAN}Add subfinder API keys for better results${NC}"
     echo -e "${CYAN}Run Chomte.sh Now :)${NC}"
 fi
 

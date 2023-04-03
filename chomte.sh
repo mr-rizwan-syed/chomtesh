@@ -600,7 +600,7 @@ function active_recon(){
             echo -e "${GREEN}[$] Total Potential URLs ${NC}[$potuc]"
             
             [ ! -e $enumscan/URLs/paramurl.txt ] && echo -e "${BLUE}[*] QSInjecting Unique parameter URLs >>${NC} $enumscan/URLs/paramurl.txt"
-            [ ! -e $enumscan/URLs/paramurl.txt ] && cat $enumscan/URLs/potentialurls.txt | qsinject -c MISC/rules-example.yaml 2>/dev/null | anew $enumscan/URLs/paramurl.txt -q &>/dev/null
+            [ ! -e $enumscan/URLs/paramurl.txt ] && cat $enumscan/URLs/potentialurls.txt | qsinject -c MISC/qs-rules.yaml 2>/dev/null | anew $enumscan/URLs/paramurl.txt -q &>/dev/null
             
             purl=$(<$enumscan/URLs/paramurl.txt wc -l)
             echo -e "${GREEN}${BOLD}[$] Unique parameter URLs ${NC}[$purl] [$enumscan/URLs/paramurl.txt]"
