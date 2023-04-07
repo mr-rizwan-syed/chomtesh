@@ -261,13 +261,13 @@ function dnsprobe(){
     dmut --update-files &>/dev/null
     
     [ ! -e $results/$domain/dnsprobe.txt ] && echo -e "${BLUE}[#] cat $1 | dnsx $dnsx_flags | anew -q $results/$domain/dnsprobe.txt ${NC}"
-    [ ! -e $results/$domain/dnsprobe.txt ] && cat $1 | dnsx -a -re -cdn -asn -r /root/.dmut/top20.txt | anew -q $results/$domain/dnsprobe.txt | pv -p -t -e -N "Running DNSx" >/dev/null
+    [ ! -e $results/$domain/dnsprobe.txt ] && cat $1 | dnsx -a -cname -re -cdn -asn -r /root/.dmut/top20.txt | anew -q $results/$domain/dnsprobe.txt | pv -p -t -e -N "Running DNSx" >/dev/null
     
-    [ ! -e $results/$domain/dnshosts.txt ] && echo -e "${BLUE}[#] cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print \$2}' | anew -q $results/$domain/dnshosts.txt  ${NC}"
-    [ ! -e $results/$domain/dnshosts.txt ] && cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print $2}' | anew -q $results/$domain/dnshosts.txt &>/dev/null 2>&1
+    # [ ! -e $results/$domain/dnshosts.txt ] && echo -e "${BLUE}[#] cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print \$2}' | anew -q $results/$domain/dnshosts.txt  ${NC}"
+    # [ ! -e $results/$domain/dnshosts.txt ] && cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print $2}' | anew -q $results/$domain/dnshosts.txt &>/dev/null 2>&1
     
-    dnspc=$(<$results/$domain/dnshosts.txt wc -l)
-    echo -e "${GREEN}${BOLD}[$] Subdomains DNS Resolved ${NC}[$dnspc] [$results/$domain/dnshosts.txt]"
+    dnspc=$(<$results/$domain/dnsprobe.txt wc -l)
+    echo -e "${GREEN}${BOLD}[$] Subdomains DNS Resolved ${NC}[$dnspc] [$results/$domain/dnsprobe.txt]"
 }
 
 function nmapconverter(){
@@ -338,8 +338,8 @@ function portscanner(){
         elif [ -f "$naabuout" ]; then
             # echo -e "${CYAN}[I] $naabuout already exists${NC}...SKIPPING..."
             [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-            [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
-            [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport -q &>/dev/null
+            [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null  
+            [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
             nmapscanner
         # else run naabu to initiate port scan
         # starts from here
@@ -350,20 +350,8 @@ function portscanner(){
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1
-                
-                # Loop through each IP in aliveip.txt
-                while read -r host; do
-                    ports=$(csvcut -c ip,port $naabuout | sort -u | grep -w "$host" | cut -d , -f 2 | tr '\n' ',' | awk '{print substr($0, 1, length($0)-1)}')
-                    
-                # Loop through each subdomain associated with the current IP and print the open ports for each one
-                    cat "$results/$domain/dnsprobe.txt" | grep -w "$host" | cut -d ' ' -f 1 | while read -r subdomain; do
-                        echo "$ports" | awk -v d="$subdomain" '{split($0,a,","); for(i in a) print d":"a[i]}' | anew $hostport &>/dev/null 2>&1
-                    done
-                done < "$results/$domain/dnshosts.txt"
-
-                # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
-                [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport -q &>/dev/null
-
+                [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
+                [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
                 echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
             else
@@ -371,8 +359,8 @@ function portscanner(){
                 echo -e ${BLUE}"[#] naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-                [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | sort -u | grep -v 'host,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $hostport -q &>/dev/null
-                [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | sort -u | grep -v 'ip,port' | awk '{ sub(/,/, ":") } 1' | sed '1d' | anew $ipport -q &>/dev/null
+                [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
+                [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
                 echo -e ${GREEN}"[+] Quick Port Scan Completed$naabuout" ${NC}
                 nmapscanner
 	        fi
@@ -697,7 +685,7 @@ function rundomainscan(){
         mkdir -p $results/$domain
         getsubdomains $domain
         dnsprobe $subdomains
-        portscanner $results/$domain/dnshosts.txt
+        portscanner $subdomains
         iphttpx $hostport
         
         
@@ -715,7 +703,7 @@ function rundomainscan(){
         domainlist=true
         declared_paths
         dnsprobe $domain
-        portscanner $results/$domain/dnshosts.txt
+        portscanner $subdomains
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
