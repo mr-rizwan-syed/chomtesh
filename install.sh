@@ -17,13 +17,13 @@ command_exists() {
 
 dependency_installer(){
     if ! command_exists pv; then
-            apt-get install -y pv &>/dev/null
+         apt-get install -y pv &>/dev/null
     fi
 
-        if ! command_exists python3; then
-            echo "${YELLOW}[*] Installing python3 ${NC}"
-            apt install python3 -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3" >/dev/null
-        fi
+    if ! command_exists python3; then
+         echo "${YELLOW}[*] Installing python3 ${NC}"
+         apt install python3 -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3" >/dev/null
+    fi
 
     if ! command_exists python3-pip; then
         echo "${YELLOW}[*] Installing python3-pip ${NC}"
@@ -198,11 +198,11 @@ dependency_installer(){
     if ! command_exists trufflehog; then
         echo "${YELLOW}[*] Installing Trufflehog ${NC}"
         wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.31.2/trufflehog_3.31.2_linux_amd64.tar.gz -P /tmp/ &>/dev/null
-        tar -xvf /tmp/trufflehog* -C /usr/local/bin/ &>/dev/null
-        chmod +x /usr/local/bin/trufflehog
+        [ ! -e /usr/local/bin/trufflehog ] && tar -xvf /tmp/trufflehog* -C /usr/local/bin/ &>/dev/null
+        [ ! -e /usr/local/bin/trufflehog ] && chmod +x /usr/local/bin/trufflehog*
     fi
 
-    if [ ! -d ./MISC/ ]; then
+    if [ ! -d ./MISC/xnLinkFinder ]; then
         echo "${YELLOW}[*] Installing xnLinkFinder ${NC}"
         git clone https://github.com/xnl-h4ck3r/xnLinkFinder.git ./MISC/xnLinkFinder &>/dev/null
         python3 ./MISC/xnLinkFinder/setup.py install &>/dev/null
@@ -219,7 +219,7 @@ dependency_installer(){
 
 }
 
-required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
