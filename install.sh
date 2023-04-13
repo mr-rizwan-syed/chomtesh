@@ -154,8 +154,8 @@ dependency_installer(){
 
     if ! command_exists interlace; then
         echo "${YELLOW}[*] Installing Interlace ${NC}"
-        git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/ &>/dev/null
-        pip3 install -r ./MISC/Interlace/requirements.txt > /dev/null 2>&1
+        [ ! -e ./MISC/Interlace/ ] && git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/ 2>/dev/null | pv -p -t -e -N "Installing Tool: Interlace" &>/dev/null
+        [ ! -e ./MISC/Interlace/ ] && pip3 install -r ./MISC/Interlace/requirements.txt > /dev/null 2>&1
         apt install python3-netaddr > /dev/null 2>&1
         apt install python3-tqdm > /dev/null 2>&1
         cd ./MISC/Interlace/ && python3 setup.py install && cd - > /dev/null 2>&1
