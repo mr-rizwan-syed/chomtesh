@@ -141,15 +141,16 @@ dependency_installer(){
 
     if ! command_exists naabu; then
         echo "${YELLOW}[*] Installing naabu ${NC}"
-        go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: Naabu" &>/dev/null
+        # go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: Naabu" &>/dev/null
         # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
         # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
-        #wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P ./MISC/naabu &>/dev/null
-        #if ! command_exists unzip; then 
-        #    apt install unzip -y &>/dev/null
-        #fi
-        #unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
-        #mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
+        wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P ./MISC/naabu &>/dev/null
+        if ! command_exists unzip; then 
+            apt install unzip -y &>/dev/null
+        fi
+        unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
+        mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
+        sudo apt install libpcap0.8-dev libuv1-dev &>/dev/null
     fi
 
     if ! command_exists interlace; then
