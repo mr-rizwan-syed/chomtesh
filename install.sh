@@ -159,13 +159,14 @@ dependency_installer(){
         [ ! -e ./MISC/Interlace/ ] && pip3 install -r ./MISC/Interlace/requirements.txt > /dev/null 2>&1
         apt install python3-netaddr > /dev/null 2>&1
         apt install python3-tqdm > /dev/null 2>&1
-        cd ./MISC/Interlace/ && python3 setup.py install && cd - > /dev/null 2>&1
+        cd ./MISC/Interlace/ && python3 setup.py install > /dev/null 2>&1
+        cd -
     fi  
 
     if ! command_exists ansi2html; then
         echo "${YELLOW}[*] Installing ansi2html ${NC}"
         pip3 install ansi2html &>/dev/null
-        sudo apt install colorized-logs
+        sudo apt install colorized-logs &>/dev/null
     fi
 
     if ! command_exists subjs; then
