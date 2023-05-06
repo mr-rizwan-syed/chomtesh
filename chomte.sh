@@ -197,7 +197,7 @@ function getsubdomains(){
         echo -e ""
         echo -e "${YELLOW}[*] Gathering Subdomains${NC}"
         [ ! -e $subdomains ] && echo -e "${BLUE}[#] subfinder -d $1 | anew $subdomains ${NC}"
-        [ ! -e $subdomains ] && subfinder -d $1 | anew $subdomains &>/dev/null 2>&1
+        [ ! -e $subdomains ] && subfinder -d $1 | anew -q $subdomains &>/dev/null 2>&1
         sdc=$(<$subdomains wc -l)
         echo -e "${GREEN}${BOLD}[$] Subdomains Collected ${NC}[$sdc] [$subdomains]"
         
@@ -268,6 +268,10 @@ function dnsprobe(){
     
     dnspc=$(<$results/$domain/dnsprobe.txt wc -l)
     echo -e "${GREEN}${BOLD}[$] Subdomains DNS Resolved ${NC}[$dnspc] [$results/$domain/dnsprobe.txt]"
+
+    cat $results/$domain/dnsprobe.txt | cut -d ' ' -f 2 | sort -u | awk -F'[][]' '{print $2}' | anew -q $results/$domain/dnsxresolved.txt
+    dnsxr=$(<$results/$domain/dnsxresolved.txt wc -l)
+    echo -e "${GREEN}${BOLD}[$] Unique Host Resolved ${NC}[$dnsxr] [$results/$domain/dnsxresolved.txt]"
 }
 
 function nmapconverter(){
@@ -350,7 +354,7 @@ function portscanner(){
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1
-                [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
+              # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
                 [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
                 echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
@@ -359,12 +363,27 @@ function portscanner(){
                 echo -e ${BLUE}"[#] naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-                [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
+              # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
                 [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
-                echo -e ${GREEN}"[+] Quick Port Scan Completed$naabuout" ${NC}
+                echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
 	        fi
         fi
+}
+
+function portmapper(){
+    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains -> $results/$domain/dnsprobe.txt $naabuout" ${NC}
+    while read dnshost; do
+        if grep -q "$dnshost" $naabuout; then
+            subdomains=($(grep "$dnshost" $results/$domain/dnsprobe.txt | cut -d ' ' -f 1))
+            ports=($(grep -w "$dnshost" $naabuout | awk -F ',' '{print $3}'))
+            for subdomain in "${subdomains[@]}"; do
+                for port in "${ports[@]}"; do
+                    echo "${subdomain}:${port}" | anew -q $hostport
+                done
+            done
+        fi
+    done < $results/$domain/dnsxresolved.txt
 }
 
 function iphttpx(){
@@ -690,7 +709,8 @@ function rundomainscan(){
         mkdir -p $results/$domain
         getsubdomains $domain
         dnsprobe $subdomains
-        portscanner $subdomains
+        portscanner $results/$domain/dnsxresolved.txt
+        portmapper
         iphttpx $hostport
         
         
@@ -708,7 +728,8 @@ function rundomainscan(){
         domainlist=true
         declared_paths
         dnsprobe $domain
-        portscanner $subdomains
+        portscanner $results/$domain/dnsxresolved.txt
+        portmapper
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
