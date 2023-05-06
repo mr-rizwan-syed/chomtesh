@@ -372,18 +372,21 @@ function portscanner(){
 }
 
 function portmapper(){
-    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains -> $results/$domain/dnsprobe.txt $naabuout" ${NC}
-    while read dnshost; do
-        if grep -q "$dnshost" $naabuout; then
-            subdomains=($(grep "$dnshost" $results/$domain/dnsprobe.txt | cut -d ' ' -f 1))
-            ports=($(grep -w "$dnshost" $naabuout | awk -F ',' '{print $3}'))
-            for subdomain in "${subdomains[@]}"; do
-                for port in "${ports[@]}"; do
-                    echo "${subdomain}:${port}" | anew -q $hostport
+    mapper(){
+        while read dnshost; do
+            if grep -q "$dnshost" $naabuout; then
+                subdomains=($(grep "$dnshost" $results/$domain/dnsprobe.txt | cut -d ' ' -f 1))
+                ports=($(grep -w "$dnshost" $naabuout | awk -F ',' '{print $3}'))
+                for subdomain in "${subdomains[@]}"; do
+                    for port in "${ports[@]}"; do
+                        echo "${subdomain}:${port}" | anew -q $hostport
+                    done
                 done
-            done
-        fi
-    done < $results/$domain/dnsxresolved.txt
+            fi
+        done < $results/$domain/dnsxresolved.txt
+    }
+    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains -> $results/$domain/dnsprobe.txt $naabuout" ${NC}
+    [ ! -e $hostport ] && mapper
 }
 
 function iphttpx(){
@@ -393,7 +396,7 @@ function iphttpx(){
         echo -e ""
         echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
         echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | anew $webtech -q | pv -p -t -e -N "Running WebTechCheck" > /dev/null
+        webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | anew $webtech -q
         echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
     }
 
