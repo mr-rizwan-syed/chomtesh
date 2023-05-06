@@ -25,7 +25,7 @@ dependency_installer(){
          apt install python3 -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3" >/dev/null
     fi
 
-    if ! command_exists python3-pip; then
+    if ! command_exists pip; then
         echo "${YELLOW}[*] Installing python3-pip ${NC}"
         apt install python3-pip -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3-pip" >/dev/null
     fi
@@ -150,7 +150,7 @@ dependency_installer(){
         fi
         unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
         mv ./MISC/naabu/naabu /usr/local/bin &>/dev/null
-        sudo apt install libpcap0.8-dev libuv1-dev &>/dev/null
+        sudo apt install libpcap0.8-dev libuv1-dev -y &>/dev/null
     fi
 
     if ! command_exists interlace; then
