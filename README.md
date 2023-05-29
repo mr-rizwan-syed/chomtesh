@@ -37,8 +37,7 @@ To install CHOMTE.SH, follow these steps:
 1. Clone the repository: `git clone https://github.com/mr-rizwan-syed/chomtesh`
 2. Change the directory: `cd chomtesh`
 3. Make the script executable: `chmod +x *.sh`
-4. Install Golang manually by following the instructions on this [Go Setup](https://tzusec.com/how-to-install-golang-in-kali-linux/). OR Run  `./goinstaller.sh` 
-5. Run the installation script: `./install.sh`
+4. 5. Run the installation script: `./install.sh`
 6. Run Chomte.sh: `./chomte.sh`
 
 ## Usage
@@ -113,6 +112,15 @@ Here are some example commands:
 ./chomte.sh -p projectname -i 192.168.10.0/24
 ./chomte.sh -p projectname -i IPs-list.txt -n
 ```
+### Horizontal Recon - To gather Root / TLD using crt.sh
+Here are some example commands:
+```
+./crt.sh teslaoutput tesla.com
+./crt.sh teslaoutput "TESLA, INC."
+```
+![chomtesh_crtsh](https://i.imgur.com/lVpNY6L.png)
+![chomtesh_org](https://i.imgur.com/E5CO0Y4.png)
+![chomtesh_org](https://i.imgur.com/qJKZMOg.png)
 
 ## Customization
 - CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
