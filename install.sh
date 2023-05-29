@@ -17,17 +17,32 @@ command_exists() {
 
 dependency_installer(){
     if ! command_exists pv; then
-         apt-get install -y pv &>/dev/null
+        apt-get install -y pv &>/dev/null
+    fi
+
+    if ! command_exists go; then
+        echo "${YELLOW}[*] Installing go ${NC}"
+        ./goinstaller.sh 2>/dev/null
+    fi
+
+    if ! command_exists pup; then
+         echo "${YELLOW}[*] Installing pup ${NC}"
+         apt install pup -y > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: pup" >/dev/null
+    fi
+
+    if ! command_exists knockknock; then
+         echo "${YELLOW}[*] Installing knockknock ${NC}"
+         go install github.com/harleo/knockknock@latest > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: knockknock" >/dev/null
     fi
 
     if ! command_exists python3; then
          echo "${YELLOW}[*] Installing python3 ${NC}"
-         apt install python3 -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3" >/dev/null
+         apt install python3 -y > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3" >/dev/null
     fi
 
     if ! command_exists pip; then
         echo "${YELLOW}[*] Installing python3-pip ${NC}"
-        apt install python3-pip -y  > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3-pip" >/dev/null
+        apt install python3-pip -y > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3-pip" >/dev/null
     fi
 
     if ! command_exists git; then
@@ -178,7 +193,10 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing Katana ${NC}"
         go install github.com/projectdiscovery/katana/cmd/katana@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: katana" &>/dev/null
     fi
-    
+  
+}
+
+dependency_installer2(){
     if [ ! -d ./MISC/LinkFinder ]; then
         git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder &>/dev/null
         pip3 install -r ./MISC/LinkFinder/requirements.txt &>/dev/null
@@ -221,7 +239,7 @@ dependency_installer(){
 
 }
 
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -236,6 +254,7 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e ""
     echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     dependency_installer
+    dependency_installer2
     exit 1
 else
     echo -e ""
