@@ -1,5 +1,19 @@
 #!/bin/bash
 
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+if ! command_exists pup; then
+         echo "${YELLOW}[*] Installing pup ${NC}"
+         apt install pup -y > /dev/null 2>/dev/null
+fi
+
+if ! command_exists knockknock; then
+         echo "${YELLOW}[*] Installing knockknock ${NC}"
+         go install github.com/harleo/knockknock@latest > /dev/null 2>/dev/null
+fi
+
 if [ $# -ne 2 ]; then
     echo "Help Menu:"
     echo "Usage: $0 project domain"
@@ -37,12 +51,15 @@ if [ $retries -eq $max_retries ]; then
     echo "Maximum retries reached. Exiting..."
 fi
 
-cat $project/$enctarget.html | pup 'table tr:nth-child(1) td:nth-child(5) text{}' | grep -v ' ' | anew $project/alldomains.txt
-cat $project/$enctarget.html | pup 'table tr:nth-child(1) td:nth-child(6) text{}' | grep -vE 'edgecastcdn.net|cloudflaressl.com' | anew $project/alldomains.txt
-cat $project/alldomains.txt | grep -vE "([0-9]{1,3}\.){3}[0-9]{1,3}" | awk -F '.' '{print $(NF-1)"."$NF}' | sort -u | anew $project/rootdomains.txt
+cat $project/$enctarget.html | pup 'table tr:nth-child(1) td:nth-child(5) text{}' | grep -v ' ' | anew -q $project/alldomains.txt
+cat $project/$enctarget.html | pup 'table tr:nth-child(1) td:nth-child(6) text{}' | grep -vE 'edgecastcdn.net|cloudflaressl.com' | anew -q $project/alldomains.txt
+cat $project/alldomains.txt | grep -vE "([0-9]{1,3}\.){3}[0-9]{1,3}" | awk -F '.' '{print $(NF-1)"."$NF}' | sort -u | anew -q $project/rootdomains.txt
 
 alldcount=$(cat $project/alldomains.txt | wc -l)
 rdcount=$(cat $project/rootdomains.txt | wc -l)
 
 echo "All Domain count $alldcount"
 echo "Root Domain count $rdcount"
+
+knockknock -n $domain -o $results/rootdomains.txt
+echo "${GREEN} [+] Root Domain count $rdcount ${NC} - $results/rootdomains.txt"
