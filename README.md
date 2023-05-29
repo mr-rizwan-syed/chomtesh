@@ -29,7 +29,7 @@ CHOMTE.SH has the following features:
 5. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
 6. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
 
-![chomtesh_MindMap](https://i.imgur.com/4fx2RPa.png)
+![chomtesh_MindMap](https://i.imgur.com/QQ8p9Xf.png)
 
 ## Installation
 To install CHOMTE.SH, follow these steps:
