@@ -696,6 +696,7 @@ function active_recon(){
     joomla_recon
     drupal_recon
     jira_recon
+    jenkins_recon
     [ ! -f $enumscan/nuclei_pot_autoscan.txt ] && auto_nuclei || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
     [[ ${jsrecon} == true ]] && js_recon
     [[ ${enumxnl} == true ]] && xnl
