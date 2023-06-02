@@ -567,6 +567,15 @@ function active_recon(){
         fi
     }
 
+    jenkins_recon(){
+        techdetect jenkins | anew $enumscan/jenkins_urls.txt -q &>/dev/null 2>&1
+        if [ -s $enumscan/jenkins_urls.txt ];then
+            echo -e ""
+            echo -e "${YELLOW}[*] Running Jenkins Recon\n${NC}"
+            echo -e "${BLUE}[*] nuclei -l $enumscan/jenkins_urls.txt -w ~/nuclei-templates/workflows/jenkins-workflow.yaml -o $enumscan/jenkins_nuclei_results.txt\n${NC}" 
+            [ ! -e $enumscan/jenkins_nuclei_results.txt ] && nuclei -l $enumscan/jenkins_urls.txt -w ~/nuclei-templates/workflows/jenkins-workflow.yaml -o $enumscan/jenkins_nuclei_results.txt
+        fi
+    }
     # Add your custom function here; Refer above
 
     auto_nuclei(){
