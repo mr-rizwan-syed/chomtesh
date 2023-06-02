@@ -576,6 +576,17 @@ function active_recon(){
             [ ! -e $enumscan/jenkins_nuclei_results.txt ] && nuclei -l $enumscan/jenkins_urls.txt -w ~/nuclei-templates/workflows/jenkins-workflow.yaml -o $enumscan/jenkins_nuclei_results.txt
         fi
     }
+
+    azure_recon(){
+        techdetect azure | anew $enumscan/azure_urls.txt -q &>/dev/null 2>&1
+        if [ -s $enumscan/azure_urls.txt ];then
+            echo -e ""
+            echo -e "${YELLOW}[*] Running Azure Recon\n${NC}"
+            echo -e "${BLUE}[*] nuclei -l $enumscan/azure_urls.txt -w ~/nuclei-templates/workflows/azure-workflow.yaml -o $enumscan/azure_nuclei_results.txt\n${NC}" 
+            [ ! -e $enumscan/azure_nuclei_results.txt ] && nuclei -l $enumscan/azure_urls.txt -w ~/nuclei-templates/workflows/azure-workflow.yaml -o $enumscan/azure_nuclei_results.txt
+        fi
+    }
+    
     # Add your custom function here; Refer above
 
     auto_nuclei(){
@@ -706,6 +717,7 @@ function active_recon(){
     drupal_recon
     jira_recon
     jenkins_recon
+    azure_recon
     [ ! -f $enumscan/nuclei_pot_autoscan.txt ] && auto_nuclei || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
     [[ ${jsrecon} == true ]] && js_recon
     [[ ${enumxnl} == true ]] && xnl
