@@ -1,8 +1,8 @@
 #!/bin/bash
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
-#author:        mr-rizwan-syed
-#version:       3.7.6
+#author:        mr-rizwan-syed | rushikeshhh-patil
+#version:       3.7.7
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
