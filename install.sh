@@ -22,7 +22,8 @@ dependency_installer(){
 
     if ! command_exists go; then
         echo "${YELLOW}[*] Installing go ${NC}"
-        ./goinstaller.sh 2>/dev/null
+        ./goinstaller.sh
+        echo "${GREEN}[*] Rerun install.sh${NC}"
     fi
 
     if ! command_exists pup; then
