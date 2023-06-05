@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       3.7.7
+#version:       3.7.8
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -140,7 +140,7 @@ function declared_paths(){
     subdomains="$results/$domain/subdomains.txt"
          
     if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
-        dnsreconout="$results/$domain/dnsrecon.txt"
+        dnsreconout="$results/$domain/dnsprobe.txt"
         naabuout="$results/$domain/naabu.csv"
         nmapscans="$results/$domain/nmapscans"
         aliveip="$results/$domain/aliveip.txt"
@@ -172,7 +172,6 @@ function declared_paths(){
     fi
 
     if [[ ${hostportscan} == true ]] || [[ ${domainlist} == true ]] && [[ -f $hostportlist ]] || [[ -f $domain ]];then
-        echo -e "HOSTPORTSCAN is $hostportscan"
         mkdir -p $results/Domain_List
         # Declaring New Paths for Domain List
         naabuout="$results/Domain_List/naabu.csv"
@@ -188,6 +187,23 @@ function declared_paths(){
         enumscan="$PWD/$results/Domain_List/enumscan"
     fi
 
+    if [[ ${domainscan} == true ]] && [[ -f $domain ]];then
+	mkdir -p $results/Domain_List
+        # Declaring New Paths for Domain List
+	dnsreconout="$results/Domain_List/dnsprobe.txt"
+	dnsxresolved="$results/Domain_List/dnsxresolved.txt"
+        naabuout="$results/Domain_List/naabu.csv"
+        nmapscans="$results/Domain_List/nmapscans"
+        aliveip="$results/Domain_List/aliveip.txt"
+        httpxout="$results/Domain_List/httpxout.csv"
+        webtech="$results/Domain_List/webtech.csv"
+        hostport="$results/Domain_List/hostport.txt"
+        ipport="$results/Domain_List/ipport.txt"
+        urlprobed="$results/Domain_List/urlprobed.txt"
+        potentialsdurls="$results/Domain_List/potentialsdurls.txt"
+        urlprobedsd="$results/Domain_List/urlprobedsd.txt"
+        enumscan="$PWD/$results/Domain_List/enumscan"
+    fi
 }
 
 ####################################################################
@@ -260,18 +276,19 @@ function dnsprobe(){
     echo -e "${YELLOW}[*] DNS Resolving Subdomains${NC}"
     dmut --update-files &>/dev/null
     
-    [ ! -e $results/$domain/dnsprobe.txt ] && echo -e "${BLUE}[#] cat $1 | dnsx $dnsx_flags | anew -q $results/$domain/dnsprobe.txt ${NC}"
-    [ ! -e $results/$domain/dnsprobe.txt ] && cat $1 | dnsx -a -cname -re -cdn -asn -r /root/.dmut/top20.txt | anew -q $results/$domain/dnsprobe.txt | pv -p -t -e -N "Running DNSx" >/dev/null
+    [ ! -e $dnsreconout ] && echo -e "${BLUE}[#] cat $1 | dnsx $dnsx_flags -r /root/.dmut/top20.txt | anew $dnsreconout ${NC}"
+    [ ! -e $dnsreconout ] && cat $1 | dnsx $dnsx_flags -r /root/.dmut/top20.txt | anew -q $dnsreconout | pv -p -t -e -N "Running DNSx" >/dev/null
     
     # [ ! -e $results/$domain/dnshosts.txt ] && echo -e "${BLUE}[#] cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print \$2}' | anew -q $results/$domain/dnshosts.txt  ${NC}"
     # [ ! -e $results/$domain/dnshosts.txt ] && cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print $2}' | anew -q $results/$domain/dnshosts.txt &>/dev/null 2>&1
     
-    dnspc=$(<$results/$domain/dnsprobe.txt wc -l)
-    echo -e "${GREEN}${BOLD}[$] Subdomains DNS Resolved ${NC}[$dnspc] [$results/$domain/dnsprobe.txt]"
-
-    cat $results/$domain/dnsprobe.txt | cut -d ' ' -f 2 | sort -u | awk -F'[][]' '{print $2}' | anew -q $results/$domain/dnsxresolved.txt
-    dnsxr=$(<$results/$domain/dnsxresolved.txt wc -l)
-    echo -e "${GREEN}${BOLD}[$] Unique Host Resolved ${NC}[$dnsxr] [$results/$domain/dnsxresolved.txt]"
+    dnspc=$(<$dnsreconout wc -l)
+    echo -e "${GREEN}${BOLD}[$] Subdomains DNS Resolved ${NC}[$dnspc] [$dnsreconout]"
+    
+    echo -e "${YELLOW}[*] Extracting DNS Resolved IP's ${NC}"
+    cat $dnsreconout | cut -d ' ' -f 2 | sort -u | awk -F'[][]' '{print $2}' | anew -q $dnsxresolved
+    dnsxr=$(<$dnsxresolved wc -l)
+    echo -e "${GREEN}${BOLD}[$] Unique Host Resolved ${NC}[$dnsxr] [$dnsxresolved]"
 }
 
 function nmapconverter(){
@@ -350,7 +367,7 @@ function portscanner(){
         else
             if [ -f "$1" ]; then
                 echo -e ""
-                echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
+                echo -e ${YELLOW}"[*] Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1
@@ -359,7 +376,7 @@ function portscanner(){
                 echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
                 nmapscanner
             else
-                echo -e ${YELLOW}"[*]Running Quick Port Scan on $1" ${NC}
+                echo -e ${YELLOW}"[*] Running Quick Port Scan on $1" ${NC}
                 echo -e ${BLUE}"[#] naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
                 naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
                 [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
@@ -375,7 +392,7 @@ function portmapper(){
     mapper(){
         while read dnshost; do
             if grep -q "$dnshost" $naabuout; then
-                subdomains=($(grep "$dnshost" $results/$domain/dnsprobe.txt | cut -d ' ' -f 1))
+                subdomains=($(grep "$dnshost" $dnsprobe | cut -d ' ' -f 1))
                 ports=($(grep -w "$dnshost" $naabuout | awk -F ',' '{print $3}'))
                 for subdomain in "${subdomains[@]}"; do
                     for port in "${ports[@]}"; do
@@ -383,9 +400,9 @@ function portmapper(){
                     done
                 done
             fi
-        done < $results/$domain/dnsxresolved.txt
+        done < $dnsxresolved
     }
-    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains -> $results/$domain/dnsprobe.txt $naabuout" ${NC}
+    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains $dnsprobe $naabuout" ${NC}
     [ ! -e $hostport ] && mapper
 }
 
@@ -734,7 +751,7 @@ function rundomainscan(){
         mkdir -p $results/$domain
         getsubdomains $domain
         dnsprobe $subdomains
-        portscanner $results/$domain/dnsxresolved.txt
+        portscanner $dnsxresolved
         portmapper
         iphttpx $hostport
         
@@ -752,9 +769,9 @@ function rundomainscan(){
         echo -e "Domain Module $domain $domainscan - List Specified"
         domainlist=true
         declared_paths
-        dnsprobe $domain
-        portscanner $results/$domain/dnsxresolved.txt
-        portmapper
+        # dnsprobe $domain
+        portscanner $domain
+        # portmapper
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
