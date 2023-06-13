@@ -141,6 +141,7 @@ function declared_paths(){
          
     if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
         dnsreconout="$results/$domain/dnsprobe.txt"
+	dnsxresolved="$results/$domain/dnsxresolved.txt"
         naabuout="$results/$domain/naabu.csv"
         nmapscans="$results/$domain/nmapscans"
         aliveip="$results/$domain/aliveip.txt"
