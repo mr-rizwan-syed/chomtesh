@@ -501,7 +501,7 @@ function content_discovery(){
         trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
         echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
         echo -e "${BLUE}[*] interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent ${NC}"
-        echo -e "${BLUE}[*contentdiscovery.il*] ffuf -u _target_/FUZZ -w MISC/dicc.txt -sa -of csv -mc 200,201,202,203,403 -fl 0 -c -ac -recursion -recursion-depth 2 -s -v -o _output_/_cleantarget_-cd.csv ${NC}"
+        echo -e "${BLUE}[*contentdiscovery.il*] ffuf -u _target_/FUZZ -w /usr/share/dirb/wordlists/dicc.txt -sa -of csv -mc 200,201,202,203,403 -fl 0 -c -ac -recursion -recursion-depth 2 -s -v -o _output_/_cleantarget_-cd.csv ${NC}"
         if [ "$(ls -A $enumscan/contentdiscovery 2>/dev/null)" = "" ]; then
             echo -e ""
             mkdir -p $enumscan/contentdiscovery
