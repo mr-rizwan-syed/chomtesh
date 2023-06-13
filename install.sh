@@ -1,5 +1,4 @@
 #!/bin/bash
-#title:         Chomtesh-Dependency-Installer
 
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -16,6 +15,12 @@ command_exists() {
 
 
 dependency_installer(){
+
+    if ! command_exists gobuster; then
+        echo "${YELLOW}[*] Installing gobuster ${NC}"
+        apt-get install -y gobuster &>/dev/null
+    fi
+
     if ! command_exists pv; then
         apt-get install -y pv &>/dev/null
     fi
@@ -96,7 +101,7 @@ dependency_installer(){
         rm "$(which httpx)"
         go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
-    
+
     if ! command_exists dnsx; then
         echo "${YELLOW}[*] Installing DNSx ${NC}"
         go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
@@ -127,7 +132,7 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing qsreplace ${NC}"
         go install github.com/tomnomnom/qsreplace@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: qsreplace" >/dev/null
     fi
-        
+
     if ! command_exists subjack; then
         echo "${YELLOW}[*] Installing subjack ${NC}"
         go install github.com/haccer/subjack@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: subjack" >/dev/null
@@ -136,7 +141,7 @@ dependency_installer(){
     if ! command_exists webanalyze; then
         echo "${YELLOW}[*] Installing webanalyze ${NC}"
         go install github.com/rverton/webanalyze/cmd/webanalyze@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: webanalyze" >/dev/null
-    fi    
+    fi
 
     if ! command_exists nuclei; then
         echo "${YELLOW}[*] Installing nuclei ${NC}"
@@ -159,10 +164,10 @@ dependency_installer(){
     if ! command_exists naabu; then
         echo "${YELLOW}[*] Installing naabu ${NC}"
         # go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: Naabu" &>/dev/null
-        # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page. 
+        # If Naabu is not getting installed by below command, download the compiled binary from official naabu github release page.
         # go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: naabu"
         wget https://github.com/projectdiscovery/naabu/releases/download/v2.1.0/naabu_2.1.0_linux_amd64.zip -P ./MISC/naabu &>/dev/null
-        if ! command_exists unzip; then 
+        if ! command_exists unzip; then
             apt install unzip -y &>/dev/null
         fi
         unzip ./MISC/naabu/naabu_2.1.0_linux_amd64.zip -d ./MISC/naabu/ &>/dev/null
@@ -177,7 +182,7 @@ dependency_installer(){
         apt install python3-netaddr python3-tqdm -y > /dev/null 2>&1
         cd ./MISC/Interlace/ && python3 setup.py install > /dev/null 2>&1
         cd -
-    fi  
+    fi
 
     if ! command_exists ansi2html; then
         echo "${YELLOW}[*] Installing ansi2html ${NC}"
@@ -194,7 +199,6 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing Katana ${NC}"
         go install github.com/projectdiscovery/katana/cmd/katana@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: katana" &>/dev/null
     fi
-  
 }
 
 dependency_installer2(){
@@ -234,13 +238,13 @@ dependency_installer2(){
         apt install ccze -y 2>/dev/null  | pv -p -t -e -N "Installing Tool: ccze" &>/dev/null
     fi
 
-    [ ! -e ./MISC/dicc.txt ] && wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P ./MISC/ > /dev/null 2>&1
+    [ ! -e /usr/share/dirb/wordlists/dicc.txt ] && wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P /usr/share/dirb/wordlists/ > /dev/null 2>&1
     [ ! -e ./MISC/fingerprints.json ] && wget https://raw.githubusercontent.com/haccer/subjack/master/fingerprints.json -P ./MISC/ > /dev/null 2>&1
     [ ! -e ~/.gf/excludeExt.json ] && cp ./MISC/excludeExt.json ~/.gf/ && exec $SHELL
 
 }
 
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
+required_tools=("gobuster" "pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
@@ -260,6 +264,4 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
 else
     echo -e ""
     echo -e "${GREEN}All Good - JOD ${NC}"
-    echo -e "${CYAN}Add subfinder API keys for better results${NC}"
-    echo -e "${CYAN}Run Chomte.sh Now :)${NC}"
 fi
