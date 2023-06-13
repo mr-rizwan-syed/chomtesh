@@ -772,7 +772,7 @@ function rundomainscan(){
         declared_paths
         # dnsprobe $domain
         portscanner $domain
-        # portmapper
+        portmapper
         iphttpx $hostport
         if [[ ${contentscan} == true ]];then
             mkdir -p $enumscan
