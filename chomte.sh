@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       3.7.8
+#version:       3.7.9
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -141,7 +141,7 @@ function declared_paths(){
          
     if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
         dnsreconout="$results/$domain/dnsprobe.txt"
-	dnsxresolved="$results/$domain/dnsxresolved.txt"
+	    dnsxresolved="$results/$domain/dnsxresolved.txt"
         naabuout="$results/$domain/naabu.csv"
         nmapscans="$results/$domain/nmapscans"
         aliveip="$results/$domain/aliveip.txt"
@@ -191,8 +191,8 @@ function declared_paths(){
     if [[ ${domainscan} == true ]] && [[ -f $domain ]];then
 	mkdir -p $results/Domain_List
         # Declaring New Paths for Domain List
-	dnsreconout="$results/Domain_List/dnsprobe.txt"
-	dnsxresolved="$results/Domain_List/dnsxresolved.txt"
+	    dnsreconout="$results/Domain_List/dnsprobe.txt"
+	    dnsxresolved="$results/Domain_List/dnsxresolved.txt"
         naabuout="$results/Domain_List/naabu.csv"
         nmapscans="$results/Domain_List/nmapscans"
         aliveip="$results/Domain_List/aliveip.txt"
@@ -360,7 +360,7 @@ function portscanner(){
         elif [ -f "$naabuout" ]; then
             # echo -e "${CYAN}[I] $naabuout already exists${NC}...SKIPPING..."
             [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-            [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null  
+            # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null  
             [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
             nmapscanner
         # else run naabu to initiate port scan
@@ -393,7 +393,7 @@ function portmapper(){
     mapper(){
         while read dnshost; do
             if grep -q "$dnshost" $naabuout; then
-                subdomains=($(grep "$dnshost" $dnsprobe | cut -d ' ' -f 1))
+                subdomains=($(grep "$dnshost" $dnsreconout | cut -d ' ' -f 1))
                 ports=($(grep -w "$dnshost" $naabuout | awk -F ',' '{print $3}'))
                 for subdomain in "${subdomains[@]}"; do
                     for port in "${ports[@]}"; do
