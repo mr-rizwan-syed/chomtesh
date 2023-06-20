@@ -216,6 +216,7 @@ dependency_installer2(){
 
     if [ ! -d ./MISC/waymore ]; then
         echo "${YELLOW}[*] Installing WayMore ${NC}"
+        pip install pyyaml &>/dev/null
         git clone https://github.com/xnl-h4ck3r/waymore.git ./MISC/waymore &>/dev/null
         python3 ./MISC/waymore/setup.py install &>/dev/null
     fi
