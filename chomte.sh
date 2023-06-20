@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       3.7.9
+#version:       4.0.0
 #==============================================================================
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
@@ -25,7 +25,6 @@ nmap_flags=$(grep '^nmap_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 
-
 banner(){
 echo ${GREEN} '
 
@@ -45,7 +44,21 @@ function cleanup() {
 
 trap cleanup SIGINT
 
-# Show usage via commandline arguments
+function declared_paths(){
+  subdomains="$results/subdomains.txt"
+  naabuout="$results/naabu.csv"
+  nmapscans="$results/nmapscans"
+  aliveip="$results/aliveip.txt"
+  httpxout="$results/httpxout.csv"
+  webtech="$results/webtech.csv"
+  hostport="$results/hostport.txt"
+  ipport="$results/ipport.txt"
+  urlprobed="$results/urlprobed.txt"
+  potentialsdurls="$results/potentialsdurls.txt"
+  urlprobedsd="$results/urlprobedsd.txt"
+  enumscan="$PWD/$results/enumscan"
+}
+
 print_usage() {
   banner
   echo "${MAGENTA}"
@@ -60,45 +73,50 @@ print_usage() {
   echo "Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex"
   echo "${NC}"
   echo "  Mandatory Flags:"
-  echo "    -p   | --project                : Specify Project Name here"
-  echo "    -d   | --domain                 : Specify Root Domain here / Domain List here"
+  echo "    -p   | --project <string>       : Specify Project Name here"
+  echo "    -d   | --domain <string>        : Specify Root Domain here / Domain List here"
   echo "      OR          "
-  echo "    -i   | --ip                     : Specify IP / CIDR/ IPlist here"
+  echo "    -i   | --ip <string>            : Specify IP / CIDR/ IPlist here"
   echo "      OR          "
   echo "    -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List"
   echo ""  
   echo "Optional Flags - ${wul}Only applicable with domain -d flag${NC}"
   echo ""
+  echo "    -sd | --singledomain            : Single Domain for In-Scope Engagement"
+  echo "    -a   | --all                    : Run all required scans"
+  echo "    -rr   | --rerun                 : ReRun the scan again"
   echo "    -brt | --dnsbrute               : DNS Recon Bruteforce"
+  echo "        -ax | --alterx              : Subdomain Bruteforcing using DNSx on Alterx Generated Domains"
   echo "    -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling"
   echo "    -sto | --takeover               : Subdomain Takeover Scan"
   echo ""
   echo "Global Flags - ${wul}Applicable with both -d / -i ${NC}"
-  echo "    -n   | --nmap                   : Nmap Scan against open ports"
-  echo "    -cd  | --content                : Content Discovery Scan"
-  echo "    -cd  | --content subdomains.txt :Content Discovery Scan"
-  echo "    -e   | --enum                   : Active Recon"
+ 
+  echo "    -n   | --nmap                      : Nmap Scan against open ports"
+  echo "    -e   | --enum                      : Active Recon"
+  echo "       -cd  | --content                : Content Discovery Scan"
+  echo "       -cd  | --content subdomains.txt : Content Discovery Scan"
   echo "       -js  | --jsrecon                : JS Recon; applicable with enum -e flag"
   echo "       -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag"  
-  echo "    -h   | --help                   : Show this help"
+  echo "    -h   | --help                      : Show this help"
   echo ""
   echo "${NC}"
   exit
 }
 
-domaindirectorycheck(){
+function domaindirectorycheck(){
+    results=Results/$project
     if [ -d $results ]
     then
         echo -e
-        echo -e "${BLUE}[I] $results Directory already exists...\n${NC}"
+        echo -e "${BLUE}[I] $results Directory already exists: $results\n${NC}"
     else
         mkdir -p $results
-        echo -e "${BLUE}[I] $results Directory Created\n${NC}" 
+        echo -e "${BLUE}[I] $results Directory Created: $results\n${NC}" 
     fi
-    
 }
 
-required_tools=("go" "python3" "ccze" "git" "pip" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "trufflehog" "nuclei" "nmap" "ansi2html" "xsltproc" "anew" "interlace" "subjs" "katana")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
@@ -110,192 +128,198 @@ if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     exit 1
 fi
-function var_checker(){
-    
-    echo -e "${BLUE}[*] Checking for required arguments...${NC}"
 
+function var_checker(){
+  echo -e "${BLUE}[*] Checking for required arguments...${NC}"
 	if [[ -z ${project} ]]; then
 		echo -e "${RED}[-] ERROR: Project Name is not set${NC}"
 		echo -e "${RED}[-] Missing -p ${NC}"
-        print_usage
-        exit 1
-    else
-        domaindirectorycheck
-    fi
-    #####################################################
+    #print_usage
+    exit 1
+  else
+    domaindirectorycheck
+  fi
 
-    if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true ]];then
-
-        [[ ${domainscan} == true ]] && rundomainscan
-        [[ ${ipscan} == true ]] && runipscan     
-        [[ ${hostportscan} == true ]] && runhostportscan
-
-    else
-        echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d${NC}"    
-    fi
+  if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true ]];then
+    [[ ${domainscan} == true ]] && rundomainscan
+    [[ ${ipscan} == true ]] && runipscan
+    [[ ${hostportscan} == true ]] && runhostportscan
+  else
+    echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d ${NC}"    
+  fi
 }
 
-function declared_paths(){
-    results=Results/$project
-    subdomains="$results/$domain/subdomains.txt"
-         
-    if [[ ${domainscan} == true ]] && [[ ! -f $domain ]];then
-        dnsreconout="$results/$domain/dnsprobe.txt"
-	    dnsxresolved="$results/$domain/dnsxresolved.txt"
-        naabuout="$results/$domain/naabu.csv"
-        nmapscans="$results/$domain/nmapscans"
-        aliveip="$results/$domain/aliveip.txt"
-        httpxout="$results/$domain/httpxout.csv"
-        httpxresume="$results/$domain/httpxresume.cfg"
-        webtech="$results/$domain/webtech.csv"
-        hostport="$results/$domain/hostport.txt"
-        ipport="$results/$domain/ipport.txt"
-        urlprobed="$results/$domain/urlprobed.txt"
-        potentialsdurls="$results/$domain/potentialsdurls.txt"
-        urlprobedsd="$results/$domain/urlprobedsd.txt"
-        enumscan="$PWD/$results/$domain/enumscan"
-        jsubfinderout="$results/$domain/jsubfinder.txt"
-    fi
-
-    if [[ ${ipscan} == true ]];then
-        echo -e "IPSCAN is $ipscan"
-        naabuout="$results/naabu.csv"
-        nmapscans="$results/nmapscans"
-        aliveip="$results/aliveip.txt"
-        httpxout="$results/httpxout.csv"
-        webtech="$results/webtech.csv"
-        hostport="$results/hostport.txt"
-        ipport="$results/ipport.txt"
-        urlprobed="$results/urlprobed.txt"
-        potentialsdurls="$results/potentialsdurls.txt"
-        urlprobedsd="$results/urlprobedsd.txt"
-        enumscan="$PWD/$results/enumscan"
-    fi
-
-    if [[ ${hostportscan} == true ]] || [[ ${domainlist} == true ]] && [[ -f $hostportlist ]] || [[ -f $domain ]];then
-        mkdir -p $results/Domain_List
-        # Declaring New Paths for Domain List
-        naabuout="$results/Domain_List/naabu.csv"
-        nmapscans="$results/Domain_List/nmapscans"
-        aliveip="$results/Domain_List/aliveip.txt"
-        httpxout="$results/Domain_List/httpxout.csv"
-        webtech="$results/Domain_List/webtech.csv"
-        hostport="$results/Domain_List/hostport.txt"
-        ipport="$results/Domain_List/ipport.txt"
-        urlprobed="$results/Domain_List/urlprobed.txt"
-        potentialsdurls="$results/Domain_List/potentialsdurls.txt"
-        urlprobedsd="$results/Domain_List/urlprobedsd.txt"
-        enumscan="$PWD/$results/Domain_List/enumscan"
-    fi
-
-    if [[ ${domainscan} == true ]] && [[ -f $domain ]];then
-	mkdir -p $results/Domain_List
-        # Declaring New Paths for Domain List
-	    dnsreconout="$results/Domain_List/dnsprobe.txt"
-	    dnsxresolved="$results/Domain_List/dnsxresolved.txt"
-        naabuout="$results/Domain_List/naabu.csv"
-        nmapscans="$results/Domain_List/nmapscans"
-        aliveip="$results/Domain_List/aliveip.txt"
-        httpxout="$results/Domain_List/httpxout.csv"
-        webtech="$results/Domain_List/webtech.csv"
-        hostport="$results/Domain_List/hostport.txt"
-        ipport="$results/Domain_List/ipport.txt"
-        urlprobed="$results/Domain_List/urlprobed.txt"
-        potentialsdurls="$results/Domain_List/potentialsdurls.txt"
-        urlprobedsd="$results/Domain_List/urlprobedsd.txt"
-        enumscan="$PWD/$results/Domain_List/enumscan"
-    fi
-}
-
-####################################################################
+#######################################################
 
 function getsubdomains(){
-    # Subdomain gathering
-        echo -e ""
-        echo -e "${YELLOW}[*] Gathering Subdomains${NC}"
-        [ ! -e $subdomains ] && echo -e "${BLUE}[#] subfinder -d $1 | anew $subdomains ${NC}"
-        [ ! -e $subdomains ] && subfinder -d $1 | anew -q $subdomains &>/dev/null 2>&1
-        sdc=$(<$subdomains wc -l)
-        echo -e "${GREEN}${BOLD}[$] Subdomains Collected ${NC}[$sdc] [$subdomains]"
-        
-        runjsubfinder(){
-            jsubfinder(){
-                trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-                echo -e ""
-                echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
-                echo -e "${BLUE}interlace -tL $subdomains -o $jsubfinderout -c 'echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q'${NC}"
-                echo -e ""
-                [ ! -e $jsubfinderout ] && interlace -tL $subdomains -o $jsubfinderout -c "echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q" --silent | pv -p -t -e -N "Gathering Subdomains from JS" >/dev/null
-            }
-            jsubfinder
-            jsub_sdc=$(cat $jsubfinderout | anew $subdomains | wc -l)
-            total_sdc=$(cat $subdomains | wc -l)
-            echo -e "${GREEN}[$] Unique Subdomains Collected from JSubfinder${NC}[$jsub_sdc]"
-            echo -e "${GREEN}[$] Total Subdomains Collected ${NC}[$total_sdc]"
-        }
+  echo -e "${YELLOW}[*] Gathering Subdomains: $domain${NC}"
+  domain=$1
+  subdomains=$2
+  [[ ! -e $subdomains || $rerun == true ]] && echo -e "${BLUE}[#] subfinder -d $domain | anew $subdomains ${NC}"
+  [[ ! -e $subdomains ]] && subfinder -d $domain | anew -q $subdomains &>/dev/null 2>&1
+  [[ $rerun == true ]] && subfinder -d $domain | anew -q $results/subdomains.tmp &>/dev/null 2>&1
+  [[ -e $results/subdomains.tmp ]] && grep -Fxvf $subdomains $results/subdomains.tmp > $results/newsubdomains.tmp
+  
+  [[ -e $results/newsubdomains.tmp ]] && nsdc=$(<$results/newsubdomains.tmp wc -l)
+  [[ $rerun == true ]] && echo -e "${GREEN}${BOLD}[$] New Subdomains Collected ${NC}[$nsdc] [$results/newsubdomains.tmp]"
+  
+  [[ -e $results/newsubdomains.tmp ]] && cat $results/newsubdomains.tmp | anew -q $subdomains
+  [[ -e $results/subdomains.tmp ]] && rm $results/subdomains.tmp
 
-        function dnsreconbrute(){
-        # DNS Subdomain Bruteforcing
-                trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-                echo -e ""
-                echo -e "${YELLOW}[*] Bruteforcing Subdomains DNSRecon${NC}"
-                echo -e "${BLUE}dmut -u "$domain" $dmut_flags -o $dnsreconout ${NC}"
-                dmut --update-files &>/dev/null
-                [ ! -e $dnsreconout ] && dmut -u "$domain" $dmut_flags -o $dnsreconout
-                dnsbrute_sdc=$(cat $dnsreconout | anew $subdomains | wc -l)
-                total_sdc=$(cat $subdomains | wc -l)
-                echo -e ""
-                echo -e "${GREEN}[$] New Unique Subdomains found by bruteforcing${NC}[$dnsbrute_sdc]"
-                echo -e "${GREEN}[$] Total Subdomains Enumerated${NC}[$total_sdc]"
-        }
-
-        subdomaintakeover(){
-            trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-            echo -e ""
-            echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
-            mkdir -p $enumscan
-            if [ -e $urlprobed ]; then
-                trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-                echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
-                [ ! -e $enumscan/nuclei-takeover.txt ] && nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
-            fi
-
-            if [ -e $subdomains ]; then
-                trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-                echo -e "${BLUE}[#] subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
-                [ ! -e $enumscan/subjack-takeover.txt ] && subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt 2>/dev/null
-            fi
-        }
-
-    # [ -f ${subdomains} ] && echo -e "${CYAN}[I] $subdomains already exists${NC}...SKIPPING..."
-    [ "$jsd" == true ] && runjsubfinder
-    [ "$dnsbrute" == true ] && dnsreconbrute
-    [ "$takeover" == true ] && subdomaintakeover
+  sdc=$(<$subdomains wc -l)
+  echo -e "${GREEN}${BOLD}[$] Subdomains Collected ${NC}[$sdc] [$subdomains]"
 }
 
-function dnsprobe(){
-    echo -e "${YELLOW}[*] DNS Resolving Subdomains${NC}"
-    dmut --update-files &>/dev/null
-    
-    [ ! -e $dnsreconout ] && echo -e "${BLUE}[#] cat $1 | dnsx $dnsx_flags -r /root/.dmut/top20.txt | anew $dnsreconout ${NC}"
-    [ ! -e $dnsreconout ] && cat $1 | dnsx $dnsx_flags -r /root/.dmut/top20.txt | anew -q $dnsreconout | pv -p -t -e -N "Running DNSx" >/dev/null
-    
-    # [ ! -e $results/$domain/dnshosts.txt ] && echo -e "${BLUE}[#] cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print \$2}' | anew -q $results/$domain/dnshosts.txt  ${NC}"
-    # [ ! -e $results/$domain/dnshosts.txt ] && cat $results/$domain/dnsprobe.txt | awk -F'[][]' '{print $2}' | anew -q $results/$domain/dnshosts.txt &>/dev/null 2>&1
+function jsubfinder(){
+  jsubfinderin=$1
+  jsubfinderout=$2
+  trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+  echo -e ""
+  echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
+  echo -e "${BLUE}[#] interlace -tL $jsubfinderin -o $jsubfinderout -c 'echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q'${NC}"
+  echo -e ""
+  [ ! -e $jsubfinderout ] && interlace -tL $jsubfinderin -o $jsubfinderout -c "echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q" --silent | pv -p -t -e -N "Gathering Subdomains from JS" >/dev/null
+  jsub_sdc=$(cat $jsubfinderout | anew $subdomains | wc -l)
+  total_sdc=$(cat $subdomains | wc -l)
+  echo -e "${GREEN}[$] Unique Subdomains Collected from JSubfinder${NC}[$jsub_sdc]"
+  echo -e "${GREEN}[$] Total Subdomains Collected ${NC}[$total_sdc]"
+}
+
+function dnsreconbrute(){
+  # DNS Subdomain Bruteforcing
+  domain=$1
+  dnsbruteout=$2
+  trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+  echo -e ""
+  echo -e "${YELLOW}[*] Bruteforcing Subdomains DNSRecon${NC}"
+  dmut --update-files &>/dev/null
+  [[ ! -e $dnsbruteout  || $rerun == true ]] && echo -e "${BLUE}dmut -u "$domain" $dmut_flags -o $dnsbruteout ${NC}"
+  [[ ! -e $dnsbruteout  || $rerun == true ]] && dmut -u "$domain" $dmut_flags -o $dnsbruteout
+  [[ $alterx == true  && ! -e $dnsbruteout || $rerun == true ]] && echo -e "${YELLOW}[*] Performing Alterx Bruteforcing using DNSx ${NC}"
+  [[ $alterx == true  && ! -e $dnsbruteout || $rerun == true ]] && echo -e "${BLUE}[#] cat $subdomains | alterx -silent | dnsx -silent -r /root/.dmut/resolvers.txt | anew -q $dnsbruteout ${NC}"
+  [[ $alterx == true  && ! -e $dnsbruteout || $rerun == true ]] && cat $subdomains | alterx | dnsx -r /root/.dmut/resolvers.txt | anew $dnsbruteout | pv -p -t -e -N "Subdomain Bruteforcing using DNSx on Alterx Generated Domains" &>/dev/null 2>&1
+  [[ -e $dnsbruteout ]] && grep -Fxvf $subdomains $dnsbruteout | anew -q $results/brutesubdomains.tmp
+  [[ -e $dnsbruteout ]] && dnsbrute_sdc=$(cat $dnsbruteout | wc -l)
+  [[ -e $dnsbruteout ]] && cat $dnsbruteout | anew -q $subdomains
+  [[ -e $results/brutesubdomains.tmp ]] && dnsbrute_sdc=$(cat $results/brutesubdomains.tmp | wc -l)
+  [[ -e $results/brutesubdomains.tmp ]] && cat $results/brutesubdomains.tmp | anew -q $subdomains 
+  total_sdc=$(cat $subdomains | wc -l)
+
+  echo -e ""
+  echo -e "${GREEN}[$] New Unique Subdomains found by bruteforcing${NC} [$dnsbrute_sdc]"
+  echo -e "${GREEN}[$] Total Subdomains Enumerated${NC} [$total_sdc]"
+}
+
+function subdomaintakeover(){
+  mkdir -p $enumscan
+  trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+  echo -e ""
+  echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
+
+  if [ -e $urlprobed ]; then
+      trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+      [ ! -e $enumscan/nuclei-takeover.txt || $rerun == true ] && echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
+      [ ! -e $enumscan/nuclei-takeover.txt || $rerun == true ] && nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
+  fi
+  if [ -e $subdomains ]; then
+      trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+      [ ! -e $enumscan/subjack-takeover.txt || $rerun == true ] && echo -e "${BLUE}[#] subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
+      [ ! -e $enumscan/subjack-takeover.txt || $rerun == true ] && subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt 2>/dev/null
+  fi
+}
+
+function httpprobing(){
+  webtechcheck(){
+    urlprobed=$1 webtech=$2
+    webanalyze -update &>/dev/null 2>&1
+    echo -e ""
+    echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
+    [[ ! -e $webtech || $rerun == true ]] && echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
+    [[ ! -e $webtech || $rerun == true ]] && webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | anew -q $webtech &>/dev/null 2>&1
+    echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
+  }
+  echo -e "${YELLOW}[*] HTTP Probing${NC}"
+  hostlist=$1
+  httpxout=$2
+  
+  if [ -f "$hostlist" ]; then
+    [[ ! -e $httpxout || $rerun == true ]] && echo -e "${BLUE}[#] cat $hostlist | httpx $httpx_flags -csv | anew -q $httpxout ${NC}"
+    [[ ! -e $httpxout || $rerun == true ]] && cat $hostlist | httpx $httpx_flags -csv | anew -q $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+    [ -e $httpxout ] && echo -e "${GREEN}[+] HTTP Probe Output:${NC} $httpxout"
+  else
+    echo "${BLUE}[#] echo $hostlist | httpx $httpx_flags -csv | anew -q $httpxout ${NC}"
+    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx $httpx_flags -csv | anew -q $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+  fi
+
+  [[ ! -e $urlprobed || $rerun == true ]] && csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
+  [[ "$all" == true && -f "$results/httpxout2.csv" ]] && csvstack $results/httpxout.csv $results/httpxout2.csv | csvcut -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
+  urlpc=$(<$urlprobed wc -l)
+  echo -e "${GREEN}${BOLD}[$] Total URL Probed ${NC}[$urlpc] [$urlprobed]"
+
+
+  if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]];then
+      echo -e "${YELLOW}[*] Extracting Potential URLs${NC}"
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+  fi
+  
+  if [[ ${domainscan} == true ]];then
+      echo -e "${YELLOW}[*] Extracting Potential URLs${NC}"
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+  fi
+       
+  [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' | sort -u | anew -q $potentialsdurls &>/dev/null 2>&1
+  rm $potentialsdurls-tmp 
+        
+  purlc=$(<$potentialsdurls wc -l)
+  echo -e "${GREEN}${BOLD}[$] Potential URL Extracted ${NC}[$purlc] [$potentialsdurls]"
+
+  # echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
+  [ ! -e $webtech ] && webtechcheck $urlprobed $webtech
+}
+
+function dnsresolve(){
+  dnsresolvein=$1
+  dnsreconout=$2
+  dnsxresolved=$3
+  echo -e "${YELLOW}[*] DNS Resolving${NC}"
+  dmut --update-files &>/dev/null  
+  [[ ! -e $dnsreconout || $rerun == true ]] && echo -e "${BLUE}[#] cat $dnsresolvein | dnsx $dnsx_flags -r /root/.dmut/top20.txt | anew $dnsreconout ${NC}"
+  [[ ! -e $dnsreconout || $rerun == true ]] && cat $dnsresolvein | dnsx $dnsx_flags -r /root/.dmut/top20.txt | anew -q $dnsreconout | pv -p -t -e -N "Running DNSx" >/dev/null
     
     dnspc=$(<$dnsreconout wc -l)
     echo -e "${GREEN}${BOLD}[$] Subdomains DNS Resolved ${NC}[$dnspc] [$dnsreconout]"
     
     echo -e "${YELLOW}[*] Extracting DNS Resolved IP's ${NC}"
-    cat $dnsreconout | cut -d ' ' -f 2 | sort -u | awk -F'[][]' '{print $2}' | anew -q $dnsxresolved
+    cat $dnsreconout | cut -d ' ' -f 2 | sort -u | awk -F'[][]' '{print $2}' | grep -vE 'autodiscover|microsoft' | anew -q $dnsxresolved
     dnsxr=$(<$dnsxresolved wc -l)
     echo -e "${GREEN}${BOLD}[$] Unique Host Resolved ${NC}[$dnsxr] [$dnsxresolved]"
 }
 
-function nmapconverter(){
-    rm $nmapscans/*.html &>/dev/null 
-    rm $nmapscans/*.csv &>/dev/null
+function portscanner(){
+  portscannerin=$1
+  naabuout=$2
+  
+  scanner(){
+    ports=$(cat $ipport| grep $iphost | cut -d ':' -f 2 | xargs | sed -e 's/ /,/g')
+      if [ -z "$ports" ]
+      then
+          echo -e "No Ports found for $iphost"
+      else
+          echo -e ""
+          echo -e ${CYAN}"[$] Running Nmap Scan on"${NC} $iphost ======${CYAN} $ports ${NC}
+          if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
+            echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
+          else
+            [ ! -e $nmapscans/nmapresult-$iphost.nmap ] && nmap $iphost -p $ports $nmap_flags -oX $nmapscans/nmapresult-$iphost.xml -oN $nmapscans/nmapresult-$iphost.nmap &>/dev/null
+          fi
+      fi
+    }
 
+  nmapconverter(){
+    rm $nmapscans/*.html &>/dev/null
+    rm $nmapscans/*.csv &>/dev/null
     # Convert to csv
     ls $nmapscans/*.xml | xargs -I {} python3 $PWD/MISC/xml2csv.py -f {} -csv {}.csv &>/dev/null 
     echo -e "${GREEN}[+] All Nmap CSV Generated ${NC}"
@@ -305,7 +329,6 @@ function nmapconverter(){
     [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && head -n 1 "$first_file" > $nmapscans/Nmap_Final_Merged.csv
     [ -e $nmapscans/Nmap_Final_Merged.csv ] && tail -q -n +2 $nmapscans/*.csv >> $nmapscans/Nmap_Final_Merged.csv
     echo -e "${GREEN}[+] Merged Nmap CSV Generated ${NC}$nmapscans/Nmap_Final_Merged.csv"
-
     # Generating HTML Report Format
     ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {} 2>$nmapscans/error.log
     echo -e "${GREEN}[+] HTML Report Format Generated ${NC}"
@@ -313,80 +336,58 @@ function nmapconverter(){
     # Generating RAW Colored HTML Format
     ls $nmapscans/*.nmap | xargs -I {} sh -c 'cat {} | ccze -A | ansi2html > {}_nmap_raw_colored.html' 2>$nmapscans/error.log
     echo -e "${GREEN}[+] HTML RAW Colored Format Generated ${NC}"
-}
+  }
 
-function portscanner(){
-    # Port Scanning Start with Nmap
-    # trap 'echo -e "${RED}Ctrl + C detected in Nmap scanner${NC}"; nmapconverter;exit' SIGINT
-    scanner(){
-        ports=$(cat $ipport| grep $iphost | cut -d ':' -f 2 | xargs | sed -e 's/ /,/g')
-            if [ -z "$ports" ]
-            then
-                echo -e "No Ports found for $iphost"
-            else
-                echo -e ""
-                echo -e ${CYAN}"[$] Running Nmap Scan on"${NC} $iphost ======${CYAN} $ports ${NC}
-                if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
-                    echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
-                else
-                    [ ! -e $nmapscans/nmapresult-$iphost.nmap ] && nmap $iphost -p $ports $nmap_flags -oX $nmapscans/nmapresult-$iphost.xml -oN $nmapscans/nmapresult-$iphost.nmap &>/dev/null
-                fi            
-            fi
-        }
-        
-        nmapscanner(){
-            if [[ $nmap == "true" ]];then
-                mkdir -p $nmapscans
-                echo -e ${YELLOW}"[*] Running Nmap Scan"${NC}
-                counter=0
-                while read iphost; do
-                    scanner
-                    counter=$((counter+1))
-                    progress=$(($counter * 100 / $(wc -l < "$aliveip")))
-                    printf "Progress: [%-50s] %d%%\r" $(head -c $(($progress / 2)) < /dev/zero | tr '\0' '#') $progress
-                done <"$aliveip"
-                [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo -e "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
-            fi
-        }
-        
-        echo -e "${YELLOW}[*] Port Scanning on DNS Probed Hosts${NC}"
+  nmapscanner(){
+      if [[ $nmap == "true" ]];then
+          mkdir -p $nmapscans
+          echo -e ${YELLOW}"[*] Running Nmap Scan"${NC}
+          counter=0
+          while read iphost; do
+              scanner
+              counter=$((counter+1))
+              progress=$(($counter * 100 / $(wc -l < "$aliveip")))
+              printf "Progress: [%-50s] %d%%\r" $(head -c $(($progress / 2)) < /dev/zero | tr '\0' '#') $progress
+          done <"$aliveip"
+          [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo -e "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
+      fi
+  }
 
-        # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
-        if [[ $hostportscan == true ]] && [ -f $1 ]; then
-            declared_paths
-            cat $hostportlist | cut -d : -f 1 | anew $aliveip -q &>/dev/null
-            ipport=$hostportlist
-            nmapscanner
-        elif [ -f "$naabuout" ]; then
-            # echo -e "${CYAN}[I] $naabuout already exists${NC}...SKIPPING..."
-            [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-            # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null  
-            [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
-            nmapscanner
-        # else run naabu to initiate port scan
-        # starts from here
-        else
-            if [ -f "$1" ]; then
-                echo -e ""
-                echo -e ${YELLOW}"[*] Running Quick Port Scan on $1" ${NC}
-                echo -e ${BLUE}"[#] naabu -list $1 $naabu_flags -o $naabuout -csv" ${NC}
-                naabu -list $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
-                [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1
-              # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
-                [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
-                echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
-                nmapscanner
-            else
-                echo -e ${YELLOW}"[*] Running Quick Port Scan on $1" ${NC}
-                echo -e ${BLUE}"[#] naabu -host $1 $naabu_flags -o $naabuout -csv" ${NC}
-                naabu -host $1 $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
-                [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
-              # [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
-                [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
-                echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
-                nmapscanner
-	        fi
-        fi
+  echo -e "${YELLOW}[*] Port Scanning on DNS Probed Hosts${NC}"
+
+  # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
+  if [[ $hostportscan == true ]] && [ -f $portscannerin ]; then
+      declared_paths
+      cat $hostportlist | cut -d : -f 1 | anew $aliveip -q &>/dev/null
+      ipport=$hostportlist
+      nmapscanner
+  elif [ -f "$naabuout" ]; then
+      [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
+      [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
+      nmapscanner
+  # else run naabu to initiate port scan
+  # starts from here
+  else
+    if [ -f "$portscannerin" ]; then
+        echo -e ""
+        echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
+        [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -list $portscannerin $naabu_flags -o $naabuout -csv" ${NC}
+        [[ ! -e $naabuout || $rerun == true ]] && naabu -list $portscannerin $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
+        [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1   
+        [[ ! -e $ipport || $rerun == true ]] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
+        echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
+        nmapscanner
+    else
+        echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
+        [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -host $portscannerin $naabu_flags -o $naabuout -csv" ${NC}
+        [[ ! -e $naabuout || $rerun == true ]] && naabu -host $portscannerin $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
+        [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
+        [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
+        [[ ! -e $ipport || $rerun == true ]] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
+        echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
+        nmapscanner
+	  fi
+  fi
 }
 
 function portmapper(){
@@ -403,145 +404,20 @@ function portmapper(){
             fi
         done < $dnsxresolved
     }
-    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains $dnsprobe $naabuout" ${NC}
+    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains${NC} $dnsprobe $naabuout" 
     [ ! -e $hostport ] && mapper
-}
-
-function iphttpx(){
-
-    webtechcheck(){
-        webanalyze -update &>/dev/null 2>&1
-        echo -e ""
-        echo -e "${YELLOW}[*] Running WebTechCheck\n${NC}"
-        echo -e "${BLUE}[#] webanalyze -hosts $urlprobed $webanalyze_flags -output csv | anew $webtech ${NC}" 
-        webanalyze -hosts $urlprobed $webanalyze_flags -output csv 2>/dev/null | anew $webtech -q
-        echo -e "${GREEN}[+] WebTechCheck Scan Completed\n${NC}"
-    }
-
-    httpxcheck(){
-        echo -e "${YELLOW}[*] HTTPX Probe Started on $1 ${NC}"
-        if [ -f "$1" ]; then
-            echo -e "${BLUE}[#] cat $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            [ ! -e $httpxout ] && cat $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-        else
-            echo "${BLUE}[#] echo $1 | httpx $httpx_flags -csv -o $httpxout ${NC}"
-            [ ! -e $httpxout ] && echo $1 | httpx $httpx_flags -csv -o $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
-        fi      
-    }
-
-    httpxfiles(){
-        [ ! -e $urlprobed ] && csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
-        
-        urlpc=$(<$urlprobed wc -l)
-        echo -e "${GREEN}${BOLD}[$] Total URL Probed ${NC}[$urlpc] [$urlprobed]"
-
-
-        if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]];then
-            echo -e "${YELLOW}[*] Extracting Potential URLs${NC}"
-            [ -e $httpxout ] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-            [ -e $httpxout ] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-        fi
-        
-        if [[ ${domainscan} == true ]];then
-            echo -e "${YELLOW}[*] Extracting Potential URLs${NC}"
-            [ -e $httpxout ] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-            [ -e $httpxout ] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-        fi
-       
-        [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' | sort -u | anew -q $potentialsdurls &>/dev/null 2>&1
-        rm $potentialsdurls-tmp 
-        
-        purlc=$(<$potentialsdurls wc -l)
-        echo -e "${GREEN}${BOLD}[$] Potential URL Extracted ${NC}[$purlc] [$potentialsdurls]"
-
-        ippc=$(<$ipport wc -l)
-        echo -e "${GREEN}${BOLD}[$] IP : Port Count ${NC}[$ippc] [$ipport]"
-
-        hostpc=$(<$hostport wc -l)
-        echo -e "${GREEN}${BOLD}[$] Host : Port Count ${NC}[$hostpc] [$hostport]"
-
-        # echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"
-        [ ! -e $webtech ] && webtechcheck
-    }
-
-    # echo -e "${YELLOW}[*] HTTP Probing on Host:Port ${NC}"
-
-    if [ ! -e "$httpxout" ]; then        
-        if [ -e "$naabuout" ] && [ -f "$1" ]; then
-            httpxcheck $1
-            httpxfiles
-        elif [ -e "$naabuout" ] && [ ! -f "$1" ]; then
-            httpxcheck $1
-            httpxfiles          
-        elif [[ $hostportscan == true ]] && [ -f $1 ]; then
-            declared_paths
-            httpxcheck $1
-            httpxfiles
-        else
-            echo $1
-            echo -e "Need to scan port"
-        fi
-    else
-        # echo -e "${CYAN}[I] $httpxout already exists${NC}...SKIPPING..."
-        httpxfiles
-    fi
-}    
-
-function content_discovery(){
-    mergeffufcsv(){
-        echo -e "${YELLOW}[*] Merging All Content Discovery Scan CSV - ${NC}\n"
-        if [ -d $enumscan/contentdiscovery ] && [ ! -f $enumscan/contentdiscovery/all-cd.csv ]; then
-            cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
-            cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' | anew $enumscan/contentdiscovery/all-cd.csv
-            csvcut -c redirectlocation,content_length $enumscan/contentdiscovery/all-cd.csv | grep '200' | cut -d , -f 1 | anew $enumscan/contentdiscovery/all-cd.txt
-            echo -e "${GREEN}[*] Merged All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
-        fi
-    }
-    
-    ffuflist(){
-        trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
-        echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
-        echo -e "${BLUE}[*] interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent ${NC}"
-        echo -e "${BLUE}[*contentdiscovery.il*] ffuf -u _target_/FUZZ -w /usr/share/dirb/wordlists/dicc.txt -sa -of csv -mc 200,201,202,203,403 -fl 0 -c -ac -recursion -recursion-depth 2 -s -v -o _output_/_cleantarget_-cd.csv ${NC}"
-        if [ "$(ls -A $enumscan/contentdiscovery 2>/dev/null)" = "" ]; then
-            echo -e ""
-            mkdir -p $enumscan/contentdiscovery
-            [ -e $1 ] && interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent 2>/dev/null| pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist" >/dev/null
-            echo -e "${GREEN}[*] Content Discovery Scan Completed CSV - ${NC}\n"
-        else
-            echo -e "${RED}ContentDiscovery Directory already exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
-        fi
-        mergeffufcsv
-    }
-
-    nuclei_exposure(){
-        trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-        echo -e ""
-        echo -e "${YELLOW}[*] Running Nuclei Exposure Scan\n${NC}"
-        
-        if [[ -f "$1" ]]; then
-            echo -e "${BLUE}[*] nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt\n${NC}"
-            [ ! -e $enumscan/contentdiscovery/nuclei-exposure.txt ] && nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
-        else
-            echo -e "${BLUE}[*] nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt\n${NC}"
-             [ ! -e $enumscan/contentdiscovery/nuclei-exposure.txt ] && nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
-        fi
-    }
-
-    #[[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
-    [[ -f $1 ]] && ffuflist $1 && nuclei_exposure $1
-    [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null && nuclei_exposure $1
 }
 
 function active_recon(){
     
     techdetect(){
-        urls=($(csvcut -c url,tech $httpxout | grep -i $1 | cut -d ',' -f 1))
-        urls+=($(csvcut -c Host,Category,App $webtech | grep -i $1 | cut -d ',' -f 1))
-        result=$(printf "%s\n" "${urls[@]}")
-        for url in $result; do
-            echo $url | grep -oE "^https?://[^/]*(:[0-9]+)?"
-        done
+      [ -e $results/httpxmerge.csv ] && urls=($(csvcut -c url,tech $results/httpxmerge.csv | grep -i $1 | cut -d ',' -f 1))
+      [ -e $results/httpxout.csv ] && urls=($(csvcut -c url,tech $results/httpxout.csv | grep -i $1 | cut -d ',' -f 1))
+      urls+=($(csvcut -c Host,Category,App $webtech | grep -i $1 | cut -d ',' -f 1))
+      result=$(printf "%s\n" "${urls[@]}")
+      for url in $result; do
+          echo $url | grep -oE "^https?://[^/]*(:[0-9]+)?"
+      done
     }
     # techdetect function can be use to run with manual tools; see below examples; altough nuclei has automatic-scan feature now.
     wordpress_recon(){
@@ -610,8 +486,15 @@ function active_recon(){
     auto_nuclei(){
         echo -e ""
         echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
-        echo "${BLUE}[#] nuclei -l $urlprobed -as -silent | anew $enumscan/nuclei_pot_autoscan.txt ${NC}"
-        [ ! -e $enumscan/nuclei_pot_autoscan.txt ] && nuclei -l $urlprobed -as -silent | anew $enumscan/nuclei_pot_autoscan.txt
+        [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -as -silent | anew $enumscan/nuclei_pot_autoscan.txt ${NC}"
+        [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -as -silent | anew $enumscan/nuclei_pot_autoscan.txt
+    }
+
+    full_nuclei(){
+        echo -e ""
+        echo -e "${YELLOW}[*] Running Nuclei Full-Scan\n${NC}"
+        [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt ${NC}"
+        [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt
     }
 
     js_recon(){
@@ -730,108 +613,163 @@ function active_recon(){
         [ -d $enumscan/URLs/waymoreResponses ] && trufflehog filesystem $enumscan/URLs/waymoreResponses --only-verified | anew -q $enumscan/URLs/trufflehog-results.txt
     }
 
+    function content_discovery(){
+      mergeffufcsv(){
+          echo -e "${YELLOW}[*] Merging All Content Discovery Scan CSV - ${NC}\n"
+          if [ -d $enumscan/contentdiscovery ] && [ ! -f $enumscan/contentdiscovery/all-cd.csv ]; then
+              csvstack $enumscan/contentdiscovery/*.csv > $enumscan/contentdiscovery/all-cd.csv 2>/dev/null
+              csvcut -c redirectlocation,content_length $enumscan/contentdiscovery/all-cd.csv | grep '200' | cut -d , -f 1 | anew $enumscan/contentdiscovery/all-cd.txt
+              echo -e "${GREEN}[*] Merged All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
+          fi
+      }
+      
+      ffuflist(){
+          trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
+          echo -e "${YELLOW}[*] Running Content Discovery Scan - FFUF using dirsearch wordlist\n${NC}"
+          echo -e "${BLUE}[*] interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent ${NC}"
+          echo -e "${BLUE}[*contentdiscovery.il*] ffuf -u _target_/FUZZ -w /usr/share/dirb/wordlists/dicc.txt -sa -of csv -mc 200,201,202,203,403 -fl 0 -c -ac -recursion -recursion-depth 2 -s -v -o _output_/_cleantarget_-cd.csv ${NC}"
+          if [ "$(ls -A $enumscan/contentdiscovery 2>/dev/null)" = "" ]; then
+              echo -e ""
+              mkdir -p $enumscan/contentdiscovery
+              [ -e $1 ] && interlace -tL $1 -o $enumscan/contentdiscovery -cL ./MISC/contentdiscovery.il --silent 2>/dev/null| pv -p -t -e -N "Content Discovery using FFUF with Dirsearch wordlist" >/dev/null
+              echo -e "${GREEN}[*] Content Discovery Scan Completed CSV - ${NC}\n"
+          else
+              echo -e "${RED}ContentDiscovery Directory already exist; Remove $enumscan/contentdiscovery directory if you want to re-run.${NC}"
+          fi
+          mergeffufcsv
+      }
+
+      nuclei_exposure(){
+          trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+          echo -e ""
+          echo -e "${YELLOW}[*] Running Nuclei Exposure Scan\n${NC}"
+          
+          if [[ -f "$1" ]]; then
+              echo -e "${BLUE}[*] nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt\n${NC}"
+              [ ! -e $enumscan/contentdiscovery/nuclei-exposure.txt ] && nuclei -l $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
+          else
+              echo -e "${BLUE}[*] nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt\n${NC}"
+              [ ! -e $enumscan/contentdiscovery/nuclei-exposure.txt ] && nuclei -u $1 -t ~/nuclei-templates/exposures/ -silent | anew $enumscan/contentdiscovery/nuclei-exposure.txt
+          fi
+      }
+
+      #[[ -f $1 ]] && cat $1 | dirsearch --stdin $dirsearch_flags --format csv -o $enumscan/dirsearch_results.csv 2>/dev/null
+      [[ -f $1 ]] && ffuflist $1 && nuclei_exposure $1
+      [[ ! -f $1 ]] && dirsearch $dirsearch_flags -u $1 -o $enumscan/$1_dirsearch.csv 2>/dev/null && nuclei_exposure $1
+    }
+
     wordpress_recon
     joomla_recon
     drupal_recon
     jira_recon
     jenkins_recon
     azure_recon
-    [ ! -f $enumscan/nuclei_pot_autoscan.txt ] && auto_nuclei || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
+    auto_nuclei || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
+    [[ "$all" == true ]] && full_nuclei || echo -e "${BLUE}[*] Nuclei Full Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_full.txt"
     [[ ${jsrecon} == true ]] && js_recon
-    [[ ${enumxnl} == true ]] && xnl
+    [[ ${enumxnl} == true && ! -f $domain ]] && xnl
 
+    [[ ${contentscan} == true || ${all} == true ]] && { [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
 }
 
+#######################################################
+function declare(){
+  echo -e "${MAGENTA}---------------------------------${NC}"
+  echo -e "Results Dir: $results" && mkdir -p $results
+  echo -e "Enum Dir: $enumscan" && mkdir -p $enumscan
+  echo -e "${MAGENTA}---------------------------------${NC}"
+}
 
-####################################################################
 function rundomainscan(){
-    if [ -n "${domain}" ] && [ ! -f "${domain}" ];then
-        declared_paths
-        echo -e "Domain Module $domain $domainscan - Domain Specified"
-        
-        mkdir -p $results/$domain
-        getsubdomains $domain
-        dnsprobe $subdomains
-        portscanner $dnsxresolved
-        portmapper
-        iphttpx $hostport
-        
-        
-        if [[ ${contentscan} == true ]];then
-            mkdir -p $enumscan
-            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
-        fi
+  if [ -n "$domain" ] && [ ! -f "$domain" ] && [[ $singledomain == false ]];then
+    echo -e "Domain Module $domain $domainscan - Domain Specified"
+    results="$results/$domain"
+    declared_paths
+    declare
+    #---------------------------------------------------#
+    getsubdomains "$domain" "$results/subdomains.txt"
+    [[ "$jsd" == true ]] && jsubfinder "$results/subdomains.txt" "$results/jsubfinder.txt"
+    [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
+    [[ "$takeover" == true ]] && subdomaintakeover
+    httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
+    [ -e $results/brutesubdomains.tmp ] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv
+    if [[ "$all" == true && -f "$results/httpxout.csv" ]]; then
+      dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
+      portscanner "$results/dnsxresolved.txt" "$results/naabuout.csv" && portmapper
+      cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
+      echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
+      httpprobing "$hostport-tmp" "$results/httpxout2.csv"
+      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
+    fi
+    
+    # [[ ${enum} == true || $all == true ]] && [[ -e $results/httpxmerge.csv ]] && active_recon
         if [[ ${enum} == true ]];then
-            mkdir -p $enumscan
             [[ -e ${httpxout} ]] && active_recon
         fi
 
-    elif [ -n "${domain}" ] && [ -f "${domain}" ];then
-        echo -e "Domain Module $domain $domainscan - List Specified"
-        domainlist=true
-        declared_paths
-        # dnsprobe $domain
-        portscanner $domain
-        portmapper
-        iphttpx $hostport
-        if [[ ${contentscan} == true ]];then
-            mkdir -p $enumscan
-            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
-        fi
-        if [[ ${enum} == true ]];then
-            mkdir -p $enumscan
-            [[ ${httpxout} ]] && active_recon
-        fi
-    else
-        echo -e "${RED}[-] Domain / Domain List not specified.. Check -d again${NC}"
+    #---------------------------------------------------#
+  elif [ -n "$domain" ] && [ -f "$domain" ];then
+    echo -e "Domain Module $domain $domainscan - List Specified"
+    domainlist=true
+    declared_paths
+    declare
+    #---------------------------------------------------#
+    cat "$domain" | tee "$results/targets.txt" | anew -q "$results/subdomains.txt"
+    [[ "$jsd" == true && -f "$domain" ]] && jsubfinder "$domain" "$results/jsubfinder.txt"
+    [[ "$dnsbrute" == true && -f "$domain" ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
+    [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
+    httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
+    
+    [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | grep -v 'host:port' | anew $hostport -q &>/dev/null
+    
+    if [[ "$all" == true && -f "$results/httpxout.csv" ]]; then
+      dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
+      portscanner "$results/subdomains.txt" "$results/naabuout.csv"
+      cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
+      echo -e "${MAGENTA}Http Probing excluding port 80 & 443${NC}"
+      httpprobing "$hostport-tmp" "$results/httpxout2.csv"
+      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
     fi
+
+    #[[ $enum == true || $all == true ]] && [[ -e $results/httpxmerge.csv ]] && active_recon
+      if [[ ${enum} == true ]];then
+          [[ -e ${httpxout} ]] && active_recon
+      fi
+    #---------------------------------------------------#
+  elif [[ $singledomain == true && -n "$domain" ]];then
+    echo -e "Single Domain Module $domain"
+    results="$results/$domain"
+    declared_paths
+    declare
+    portscanner "$domain" "$results/naabuout.csv"
+    httpprobing "$hostport" "$results/httpxout.csv"
+    #[[ $enum == true || $all == true ]] && [[ -e $results/httpxmerge.csv ]] && active_recon
+    if [[ ${enum} == true ]];then
+        [[ -e ${httpxout} ]] && active_recon
+    fi
+    #---------------------------------------------------#
+  fi
 }
 
 function runipscan(){
-    if [ -n "${ip}" ];then
-        declared_paths
-        echo IP Module $ip $ipscan
-        portscanner $ip
-        iphttpx $ipport
-        if [[ ${contentscan} == true ]];then
-            mkdir -p $enumscan
-            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $potentialsdurls
-        fi
-        if [[ ${enum} == true ]];then
-            mkdir -p $enumscan
-            [[ ${httpxout} ]] && active_recon
-            # activescan $httpxout
-        fi
-    else
-        echo -e "${RED}[-] IP not specified.. Check -i again${NC}"
-    fi
+  echo -e "IP Module $ip $ipscan"
+  echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
+  declared_paths
+  declare
+  portscanner "$ip" "$results/naabuout.csv"
+  httpprobing "$ipport" "$results/httpxout.csv"
 }
 
 function runhostportscan(){
-    if [ -n "${hostportlist}" ];then
-        declared_paths
-        echo HostPortScan Module $hostportscan $hostportlist
-        iphttpx $hostportlist
-        portscanner
-        if [[ ${contentscan} == true ]];then
-            mkdir -p $enumscan
-            [[ ${cdlist} ]] && content_discovery $cdlist || content_discovery $urlprobed
-        fi
-        if [[ ${enum} == true ]];then
-            mkdir -p $enumscan
-            [[ ${httpxout} ]] && active_recon
-            # activescan $httpxout
-        fi
-    else
-        echo -e "${RED}[-] IP not specified.. Check -i again${NC}"
-    fi
+  echo -e "${MAGENTA}[*] HostPort Scan is Running on $hostportlist${NC}"
+  if [ -n "${hostportlist}" ];then
+    declared_paths
+    declare
+    httpprobing "$hostportlist" "$results/httpxout.csv"
+  fi
 }
 
-
-#######################################################################
-
-#########################################################################
-
+#######################################################
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -842,12 +780,16 @@ while [[ $# -gt 0 ]]; do
     -p|--project)
       project="$2"
       banner
-      shift 
+      shift
       ;;
     -d|--domain)
       domain="$2"
       domainscan=true
       shift 
+      ;;
+    -sd|--singledomain)
+      singledomain=true
+      shift
       ;;
     -sto|--takeover)
       takeover=true
@@ -856,24 +798,20 @@ while [[ $# -gt 0 ]]; do
     -i|--ip)
       ip="$2"
       ipscan=true
-      shift 
-      ;;
-    -n|--nmap)
-      nmap=true
-      shift 
-      ;;
-    -brt|--dnsbrute)
-      dnsbrute=true
       shift
       ;;
-    -naabu|--portscan)
-      portscan=true
-      shift 
+    -a|--all)
+      all=true
+      shift
+      ;;
+    -rr|--rerun)
+      rerun=true
+      shift
       ;;
     -hpl|--hostportlist)
       hostportlist="$2"
       hostportscan=true
-      shift 
+      shift
       ;;
     -cd|--content)
       cdlist="$2"
@@ -895,6 +833,18 @@ while [[ $# -gt 0 ]]; do
     -jsd|--jsubfinder)
       jsd=true
       shift
+      ;;
+    -brt|--dnsbrute)
+      dnsbrute=true
+      shift
+      ;;
+    -ax|--alterx)
+      alterx=true
+      shift
+      ;;
+    -n|--nmap)
+      nmap=true
+      shift 
       ;;
     -*|--*)
       echo "Unknown option $1"
