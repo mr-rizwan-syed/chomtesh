@@ -4,7 +4,7 @@
     <img src="https://i.imgur.com/Z9kuemb.png" width="200"> 
   </p>
 </div>
-<h4 align="center">Be sure to :star: my configuration repo so you can keep up to date on any daily progress!</h4>
+<h4 align="center">Be sure to :star: this repo so you can keep up to date on any daily progress!</h4>
 <div align="center">
   
 [![Twitter Follow](https://img.shields.io/twitter/follow/ccostan?color=blue&amp;label=tweet&amp;logo=twitter&amp;style=for-the-badge)](https://twitter.com/_r12w4n)
@@ -17,7 +17,7 @@ CHOMTE.SH is a shell script that automates reconnaissance during penetration tes
 
 <br>
 
-![chomtesh_usage](https://i.imgur.com/aWcTIJr.png)
+![chomtesh_usage](https://i.imgur.com/xVr74XT.png)
 
 ## Features
 CHOMTE.SH has the following features:
@@ -36,8 +36,9 @@ To install CHOMTE.SH, follow these steps:
 
 1. Clone the repository: `git clone https://github.com/mr-rizwan-syed/chomtesh`
 2. Change the directory: `cd chomtesh`
-3. Make the script executable: `chmod +x *.sh`
-4. 5. Run the installation script: `./install.sh`
+3. Switch to root user `sudo su`
+4. Make the script executable: `chmod +x *.sh`
+5. Run the installation script: `./install.sh`
 6. Run Chomte.sh: `./chomte.sh`
 
 ## Usage
@@ -65,27 +66,31 @@ Usage: ./chomte.sh -p projectname -i 127.0.0.1
 Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex
 
   Mandatory Flags:
-    -p   | --project                : Specify Project Name here
-    -d   | --domain                 : Specify Root Domain here / Domain List here
+    -p   | --project <string>       : Specify Project Name here
+    -d   | --domain <string>        : Specify Root Domain here / Domain List here
       OR
-    -i   | --ip                     : Specify IP / CIDR/ IPlist here
+    -i   | --ip <string>            : Specify IP / CIDR/ IPlist here
       OR
     -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List
 
 Optional Flags - Only applicable with domain -d flag
 
+    -sd | --singledomain            : Single Domain for In-Scope Engagement
+    -a   | --all                    : Run all required scans
+    -rr   | --rerun                 : ReRun the scan again
     -brt | --dnsbrute               : DNS Recon Bruteforce
+        -ax | --alterx              : Subdomain Bruteforcing using DNSx on Alterx Generated Domains
     -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling
     -sto | --takeover               : Subdomain Takeover Scan
 
 Global Flags - Applicable with both -d / -i
-    -n   | --nmap                   : Nmap Scan against open ports
-    -cd  | --content                : Content Discovery Scan
-    -cd  | --content subdomains.txt :Content Discovery Scan
-    -e   | --enum                   : Active Recon
+    -n   | --nmap                      : Nmap Scan against open ports
+    -e   | --enum                      : Active Recon
+       -cd  | --content                : Content Discovery Scan
+       -cd  | --content subdomains.txt : Content Discovery Scan
        -js  | --jsrecon                : JS Recon; applicable with enum -e flag
        -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag
-    -h   | --help                   : Show this help
+    -h   | --help                      : Show this help
 
 ```
 ### Mandatory Flags
@@ -106,8 +111,13 @@ Here are some example commands:
 ```
 ./chomte.sh -p projectname -d example.com
 ./chomte.sh -p projectname -d example.com -brt
+./chomte.sh -p projectname -d example.com -brt -ax
+./chomte.sh -p projectname -d example.com -brt -ax --rerun
+./chomte.sh -p projectname -d example.com -all
 ./chomte.sh -p projectname -d example.com -n -cd -e
+./chomte.sh -p projectname -d example.com -e -js
 ./chomte.sh -p projectname -d Domains-list.txt
+./chomte.sh -p projectname -d target.com -sd
 ./chomte.sh -p projectname -i 127.0.0.1
 ./chomte.sh -p projectname -i 192.168.10.0/24
 ./chomte.sh -p projectname -i IPs-list.txt -n
@@ -123,7 +133,7 @@ Here are some example commands:
 ![chomtesh_org](https://i.imgur.com/qJKZMOg.png)
 
 ## Customization
-- CHOMTE.SH allows you to customize the tool flags by editing the flags.conf file.
+- CHOMTE.SH allows you to customize the tool flags by editing the `flags.conf` file.
 - Add API keys to subfinder ~/.config/subfinder/provider-config.yaml [Subfinder API Keys](https://github.com/projectdiscovery/subfinder#post-installation-instructions).
 
 ## Contributions
