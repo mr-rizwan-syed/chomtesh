@@ -681,7 +681,7 @@ function declare(){
 }
 
 function rundomainscan(){
-  if [ -n "$domain" ] && [ ! -f "$domain" ] && [[ $singledomain == false ]];then
+  if [[ -n "$domain" && ! -f "$domain" && $singledomain != true ]];then
     echo -e "Domain Module $domain $domainscan - Domain Specified"
     results="$results/$domain"
     declared_paths
