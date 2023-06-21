@@ -17,7 +17,7 @@ CHOMTE.SH is a shell script that automates reconnaissance during penetration tes
 
 <br>
 
-![chomtesh_usage](https://i.imgur.com/xVr74XT.png)
+![chomtesh_usage](https://i.imgur.com/ezSLYjN.png)
 
 ## Features
 CHOMTE.SH has the following features:
@@ -29,7 +29,7 @@ CHOMTE.SH has the following features:
 5. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
 6. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
 
-![chomtesh_MindMap](https://i.imgur.com/QQ8p9Xf.png)
+![chomtesh_MindMap](https://i.imgur.com/xVr74XT.png)
 
 ## Installation
 To install CHOMTE.SH, follow these steps:
