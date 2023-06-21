@@ -325,10 +325,9 @@ function portscanner(){
     echo -e "${GREEN}[+] All Nmap CSV Generated ${NC}"
     
     # Merge all csv
-    first_file=$(ls $nmapscans/*.csv | head -n 1)
-    [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && head -n 1 "$first_file" > $nmapscans/Nmap_Final_Merged.csv
-    [ -e $nmapscans/Nmap_Final_Merged.csv ] && tail -q -n +2 $nmapscans/*.csv >> $nmapscans/Nmap_Final_Merged.csv
+    [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && csvstack $nmapscans/*.csv > $nmapscans/Nmap_Final_Merged.csv 2>/dev/null
     echo -e "${GREEN}[+] Merged Nmap CSV Generated ${NC}$nmapscans/Nmap_Final_Merged.csv"
+    
     # Generating HTML Report Format
     ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {} 2>$nmapscans/error.log
     echo -e "${GREEN}[+] HTML Report Format Generated ${NC}"
