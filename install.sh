@@ -101,10 +101,15 @@ dependency_installer(){
         rm "$(which httpx)"
         go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
-
+    
+    if ! command_exists alterx; then
+        echo "${YELLOW}[*] Installing AlterX ${NC}"
+        go install github.com/projectdiscovery/alterx/cmd/alterx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: AlterX"
+    fi
+    
     if ! command_exists dnsx; then
         echo "${YELLOW}[*] Installing DNSx ${NC}"
-        go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: httpx"
+        go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: DNSx"
     fi
 
     if ! command_exists anew; then
@@ -245,7 +250,7 @@ dependency_installer2(){
 
 }
 
-required_tools=("gobuster" "pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
+required_tools=("gobuster" "pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
