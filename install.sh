@@ -99,7 +99,7 @@ dependency_installer(){
     if ! command_exists httpx; then
         echo "${YELLOW}[*] Installing httpx ${NC}"
         rm "$(which httpx)"
-        go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
+        go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.3.0 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
     
     if ! command_exists alterx; then
