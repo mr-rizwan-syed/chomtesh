@@ -177,9 +177,10 @@ function rundomainscan(){
     getsubdomains "$domain" "$results/subdomains.txt"
     [[ "$jsd" == true ]] && jsubfinder "$results/subdomains.txt" "$results/jsubfinder.txt"
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
-    [[ -e $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv
+    [[ -e $httpxout && $rerun == true ]] && httpprobing $subdomains $results/httpxout.csv
+    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv
     [[ "$takeover" == true ]] && subdomaintakeover
-    [[ -e $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout.csv"
+    [[ -s $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout.csv"
     [[ ! -e $results/newsubdomains.tmp ]] && httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
     
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
