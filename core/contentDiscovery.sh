@@ -5,14 +5,15 @@
 #==============================================================================
 
 function content_discovery(){
-  mergeffufcsv(){
-      echo -e "${YELLOW}[*] Merging All Content Discovery Scan CSV - ${NC}\n"
-      if [ -d $enumscan/contentdiscovery ] && [ ! -f $enumscan/contentdiscovery/all-cd.csv ]; then
-          csvstack $enumscan/contentdiscovery/*.csv > $enumscan/contentdiscovery/all-cd.csv 2>/dev/null
-          csvcut -c redirectlocation,content_length $enumscan/contentdiscovery/all-cd.csv | grep '200' | cut -d , -f 1 | anew $enumscan/contentdiscovery/all-cd.txt
-          echo -e "${GREEN}[*] Merged All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
-      fi
-  }
+    mergeffufcsv(){
+        echo -e "${YELLOW}[*] Merging All Content Discovery Scan CSV - ${NC}\n"
+        if [ -d $enumscan/contentdiscovery ] && [ ! -f $enumscan/contentdiscovery/all-cd.csv ]; then
+            cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
+            cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' | anew $enumscan/contentdiscovery/all-cd.csv
+            csvcut -c redirectlocation,content_length $enumscan/contentdiscovery/all-cd.csv | grep '200' | cut -d , -f 1 | anew $enumscan/contentdiscovery/all-cd.txt
+            echo -e "${GREEN}[*] Merged All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
+        fi
+    }
   
   ffuflist(){
       trap 'echo -e "${RED}Ctrl + C detected in content_discovery${NC}"' SIGINT
