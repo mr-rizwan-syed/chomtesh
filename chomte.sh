@@ -342,10 +342,6 @@ while [[ $# -gt 0 ]]; do
       enumxnl=true
       shift
       ;;
-    -jsd|--jsubfinder)
-      jsd=true
-      shift
-      ;;
     -brt|--dnsbrute)
       dnsbrute=true
       shift
