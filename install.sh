@@ -241,7 +241,7 @@ dependency_installer2(){
 
 }
 
-required_tools=("gobuster" "pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &>/dev/null 2>&1; then
