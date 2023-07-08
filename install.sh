@@ -16,11 +16,6 @@ command_exists() {
 
 dependency_installer(){
 
-    if ! command_exists gobuster; then
-        echo "${YELLOW}[*] Installing gobuster ${NC}"
-        apt-get install -y gobuster &>/dev/null
-    fi
-
     if ! command_exists pv; then
         apt-get install -y pv &>/dev/null
     fi
