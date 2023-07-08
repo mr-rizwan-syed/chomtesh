@@ -118,11 +118,6 @@ dependency_installer(){
         git clone https://github.com/1ndianl33t/Gf-Patterns ~/.gf > /dev/null 2>&1
     fi
 
-    if ! command_exists jsubfinder; then
-        echo "${YELLOW}[*] Installing jsubfinder ${NC}"
-        go install github.com/ThreatUnkown/jsubfinder@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: jsubfinder" >/dev/null
-    fi
-
     if ! command_exists qsinject; then
         echo "${YELLOW}[*] Installing qsinject ${NC}"
         go install github.com/ameenmaali/qsinject@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: qsinject" >/dev/null
