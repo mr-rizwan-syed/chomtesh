@@ -25,18 +25,3 @@ function getsubdomains(){
   sdc=$(<$subdomains wc -l)
   echo -e "${GREEN}${BOLD}[$] Subdomains Collected ${NC}[$sdc] [$subdomains]"
 }
-
-function jsubfinder(){
-  jsubfinderin=$1
-  jsubfinderout=$2
-  trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-  echo -e ""
-  echo -e "${YELLOW}[*] Gathering Subdomains from Webpage and Javascript on $domain ${NC}"
-  echo -e "${BLUE}[#] interlace -tL $jsubfinderin -o $jsubfinderout -c 'echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q'${NC}"
-  echo -e ""
-  [ ! -e $jsubfinderout ] && interlace -tL $jsubfinderin -o $jsubfinderout -c "echo _target_ | jsubfinder search --crawl -t 20 -K | anew _output_ -q" --silent | pv -p -t -e -N "Gathering Subdomains from JS" >/dev/null
-  jsub_sdc=$(cat $jsubfinderout | anew $subdomains | wc -l)
-  total_sdc=$(cat $subdomains | wc -l)
-  echo -e "${GREEN}[$] Unique Subdomains Collected from JSubfinder${NC}[$jsub_sdc]"
-  echo -e "${GREEN}[$] Total Subdomains Collected ${NC}[$total_sdc]"
-}
