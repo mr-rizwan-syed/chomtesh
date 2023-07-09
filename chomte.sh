@@ -31,7 +31,7 @@ webanalyze_flags=$(grep '^webanalyze_flags=' flags.conf | awk -F= '{print $2}' |
 nmap_flags=$(grep '^nmap_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-nuclei_flags=$(grep '^nuclei_flags=' flags.conf | awk -F= '{print $2}' | xargs)
+nuclei_flags=$(grep '^nuclei_flags=' flags.conf | awk -F= '{print $2}' | xargs) 
 
 banner(){
 echo ${GREEN} '
