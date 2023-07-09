@@ -105,7 +105,7 @@ function active_recon(){
 
     auto_nuclei || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
 
-    [[ "$all" == true || $rerun == true ]] && full_nuclei || echo -e "${BLUE}[*] Nuclei Full Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_full.txt"
+    [[ "$all" == true || $rerun == true ]] && full_nuclei || echo -e "${BLUE}[*] Nuclei Full Scan on $urlprobed >> ${NC}$enumscan/nuclei_full.txt"
 
  
 }
