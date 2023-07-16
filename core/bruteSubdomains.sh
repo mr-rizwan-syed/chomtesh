@@ -14,9 +14,9 @@ function dnsreconbrute(){
   dmut --update-files &>/dev/null
   [[ ! -e $dnsbruteout  || $rerun == true ]] && echo -e "${BLUE}dmut -u "$domain" $dmut_flags -o $dnsbruteout ${NC}"
   [[ ! -e $dnsbruteout  || $rerun == true ]] && dmut -u "$domain" $dmut_flags -o $dnsbruteout
-  [[ $alterx == true && ! -e $results/alterx || $rerun == true ]] && echo -e "${YELLOW}[*] Performing AlterX Bruteforcing using DNSx ${NC}" || echo "${RED}AlterX is already done${NC}"
-  [[ $alterx == true && ! -e $results/alterx || $rerun == true ]] && echo -e "${BLUE}[#] cat $subdomains | alterx -silent | dnsx -silent -r /root/.dmut/resolvers.txt | anew -q $dnsbruteout ${NC}"
-  [[ $alterx == true && ! -e $results/alterx || $rerun == true ]] && cat $subdomains | alterx | dnsx -r /root/.dmut/resolvers.txt | anew $results/alterx && cat $results/alterx | anew $dnsbruteout | pv -p -t -e -N "Subdomain Bruteforcing using DNSx on Alterx Generated Domains" &>/dev/null 2>&1
+  [[ $alterx == true && ! -e $results/alterx || $rerun == true ]] && echo -e "${YELLOW}[*] Performing AlterX Bruteforcing using DNSx ${NC}"
+  [[ $alterx == true && ! -e $results/alterx || $rerun == true ]] && echo -e "${BLUE}[#] cat $subdomains | alterx -silent | dnsx -silent -r /root/.dmut/resolvers.txt -wd $domain| anew -q $dnsbruteout ${NC}"
+  [[ $alterx == true && ! -e $results/alterx || $rerun == true ]] && cat $subdomains | alterx | dnsx -silent -r /root/.dmut/resolvers.txt -wd $domain| anew $results/alterx && cat $results/alterx | anew -q $dnsbruteout | pv -p -t -e -N "Subdomain Bruteforcing using DNSx on Alterx Generated Domains" &>/dev/null 2>&1
   [[ -e $dnsbruteout ]] && grep -Fxvf $subdomains $dnsbruteout > $results/brutesubdomains.tmp
   [[ -e $dnsbruteout ]] && dnsbrute_sdc=$(cat $dnsbruteout | wc -l)
   [[ -e $dnsbruteout ]] && cat $dnsbruteout | anew -q $subdomains

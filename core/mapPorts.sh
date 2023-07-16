@@ -19,5 +19,5 @@ function portmapper(){
         done < $dnsxresolved
     }
     echo -e ${YELLOW}"[*] Mapping Ports to Subdomains${NC} $dnsprobe $naabuout" 
-    [ ! -e $hostport ] && mapper
+    mapper
 }

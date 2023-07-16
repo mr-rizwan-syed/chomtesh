@@ -3,11 +3,11 @@
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed
 #==============================================================================
-# nmapscanner <ipport-input> <aliveip-output> <nmapscans-directory>
-# nmapscanner ipport.txt aliveip.txt nmapscans
+# nmapscanner <ipport-input> <nmapscans-directory>
+# nmapscanner ipport.txt nmapscans
+
 ipportin=$1
-aliveip=$2
-nmapscans=$3
+nmapscans=$2
 
 [ ! -e $aliveip ] && cat $ipportin | cut -d : -f 1 | sort -u | grep -v ip | anew -q $aliveip
 
@@ -47,6 +47,7 @@ nmapconverter(){
 nmapscanner(){
     mkdir -p $nmapscans
     echo -e ${YELLOW}"[*] Running Nmap Scan"${NC}
+    echo -e ${YELLOW}"[*] nmapscanner $nmapscans $ipportin "${NC}
     counter=0
     while read iphost; do
         scanner

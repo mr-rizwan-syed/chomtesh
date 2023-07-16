@@ -10,16 +10,14 @@ function portscanner(){
   
   echo -e "${YELLOW}[*] Port Scanning on DNS Probed Hosts${NC}"
 
-  # This will check if naaabuout file is present than extract aliveip and if nmap=true then run nmap on each ip on respective open ports.
+  # This will check if naaabuout file is present than extract aliveip
   if [[ $hostportscan == true ]] && [ -f $portscannerin ]; then
       declared_paths
       [ -e $hostportlist ] && cat $hostportlist | cut -d : -f 1 | anew $aliveip -q &>/dev/null
-      ipport=$hostportlist
-      [[ $nmap == "true" ]] && nmapscanner
+      
   elif [ -f "$naabuout" ]; then
       [ ! -e $aliveip ] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
       [ ! -e $ipport ] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
-      [[ $nmap == "true" ]] && nmapscanner
   # else run naabu to initiate port scan
   # starts from here
   else
@@ -31,7 +29,6 @@ function portscanner(){
         [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1   
         [[ ! -e $ipport || $rerun == true ]] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
         echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
-        nmapscanner $ipport $aliveip $nmapscans
     else
         echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
         [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -host $portscannerin $naabu_flags -o $naabuout -csv" ${NC}
@@ -40,7 +37,6 @@ function portscanner(){
         [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
         [[ ! -e $ipport || $rerun == true ]] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
         echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
-        nmapscanner $ipport $aliveip $nmapscans
 	  fi
   fi
 }
