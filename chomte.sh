@@ -17,9 +17,22 @@ wul=`tput smul`
 
 core="$PWD/core"
 
-for script_file in "$core"/*.sh; do
-    source "$script_file"
-done
+# for script_file in "$core"/*.sh; do
+#     source "$script_file"
+# done
+
+source $core/gatherSubdomains.sh
+source $core/bruteSubdomains.sh
+source $core/subdomainTKO.sh
+source $core/resolveDNS.sh
+source $core/portScanner.sh
+source $core/nmapScanner.sh
+source $core/mapPorts.sh
+source $core/probeHttp.sh
+source $core/contentDiscovery.sh
+source $core/activeRecon.sh
+source $core/urlRecon.sh
+
 
 # sed -i 's/\s\+/ /g' flags.conf
 
@@ -96,7 +109,6 @@ print_usage() {
   echo "    -rr   | --rerun                 : ReRun the scan again"
   echo "    -brt | --dnsbrute               : DNS Recon Bruteforce"
   echo "        -ax | --alterx              : Subdomain Bruteforcing using DNSx on Alterx Generated Domains"
-  echo "    -jsd | --jsubfinder             : Get Subdomains from WebPage and JS file by crawling"
   echo "    -sto | --takeover               : Subdomain Takeover Scan"
   echo ""
   echo "Global Flags - ${wul}Applicable with both -d / -i ${NC}"
@@ -175,9 +187,8 @@ function rundomainscan(){
     declare
     #---------------------------------------------------#
     getsubdomains "$domain" "$results/subdomains.txt"
-    [[ "$jsd" == true ]] && jsubfinder "$results/subdomains.txt" "$results/jsubfinder.txt"
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
-    [[ -e $httpxout && $rerun == true ]] && httpprobing $subdomains $results/httpxout.csv
+    httpprobing $subdomains $results/httpxout.csv
     [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv
     [[ "$takeover" == true ]] && subdomaintakeover
     [[ -s $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout.csv"
@@ -186,11 +197,13 @@ function rundomainscan(){
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
       echo -e "${YELLOW}[*] Probing HTTP web services in ports other than 80 & 443${NC}"
       dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
-      portscanner "$results/dnsxresolved.txt" "$results/naabuout.csv" && portmapper
+      portscanner "$results/dnsxresolved.txt" "$results/naabuout.csv"
+      [[ -e $dnsxresolved && -e $naabuout ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
-      httpprobing "$hostport-tmp" "$results/httpxout2.csv"
+      [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv"
       [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
+      [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
     fi
     
     if [[ $enum == true || "$all" == true ]]; then
@@ -221,6 +234,7 @@ function rundomainscan(){
       echo -e "${MAGENTA}Http Probing excluding port 80 & 443${NC}"
       httpprobing "$hostport-tmp" "$results/httpxout2.csv"
       [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
+      [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
 
     if [[ $enum == true || "$all" == true ]]; then
@@ -238,6 +252,7 @@ function rundomainscan(){
     declare
     portscanner "$domain" "$results/naabuout.csv"
     httpprobing "$hostport" "$results/httpxout.csv"
+    [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
 
     if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
@@ -256,6 +271,7 @@ function runipscan(){
   declare
   portscanner "$ip" "$results/naabuout.csv"
   httpprobing "$ipport" "$results/httpxout.csv"
+  [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
   if [[ $enum == true || "$all" == true ]]; then
       [[ -e $httpxout || "$all" == true ]] && active_recon
       [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
@@ -268,12 +284,11 @@ function runhostportscan(){
     declared_paths
     declare
     httpprobing "$hostportlist" "$results/httpxout.csv"
-
+    [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
     if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
         [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
     fi
-
   fi
 }
 
