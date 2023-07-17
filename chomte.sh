@@ -117,8 +117,9 @@ print_usage() {
   echo "    -e   | --enum                      : Active Recon"
   echo "       -cd  | --content                : Content Discovery Scan"
   echo "       -cd  | --content subdomains.txt : Content Discovery Scan"
-  echo "       -js  | --jsrecon                : JS Recon; applicable with enum -e flag"
+  echo "       -ru  | --reconurl               : URL Recon; applicable with enum -e flag"
   echo "       -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag"  
+  echo "       -nf  | --nucleifuzz             : Nuclei Fuzz; applicable with enum -e flag" 
   echo "    -h   | --help                      : Show this help"
   echo ""
   echo "${NC}"
@@ -203,13 +204,14 @@ function rundomainscan(){
       echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
       [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv"
       [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
-      [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
+      [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
     
     if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
         [[ $reconurl == true || "$all" == true ]] && recon_url
         [[ $enumxnl == true && ! -f $domain || "$all" == true ]] && xnl
+        [[ $nucleifuzz == true || "$all" == true ]] && nuclei_fuzzer
         [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
     fi
     #---------------------------------------------------#
@@ -351,6 +353,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -ru|--reconurl)
       reconurl=true
+      shift
+      ;;
+    -nf|--nucleifuzz)
+      nucleifuzz=true
       shift
       ;;
     -ex|--enumxnl)
