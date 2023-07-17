@@ -106,6 +106,12 @@ recon_url(){
     fi
 }
 
+nuclei_fuzzer(){
+    echo -e "${YELLOW}[*] Running Nuclei Fuzzer"
+    [[ -s $enumscan/URLs/paramurl.txt ]] && echo -e "${BLUE}[#] nuclei -silent -t MISC/fuzzing-templates -list $enumscan/URLs/paramurl.txt | anew $enumscan/URLs/nuclei_fuzzing_results.txt ${NC}" 
+    [[ -s $enumscan/URLs/paramurl.txt ]] && nuclei -silent -t MISC/fuzzing-templates -list $enumscan/URLs/paramurl.txt | anew $enumscan/URLs/nuclei_fuzzing_results.txt
+}
+
 xnl(){
     echo -e "${YELLOW}[*] Runing Waymore on $domain"
     echo -e "${BLUE}[#] python3 ./MISC/waymore/waymore.py -i $domain -mode B -oU $enumscan/URLs/waymore.txt -oR $enumscan/URLs/waymoreResponses/\n${NC}" 
