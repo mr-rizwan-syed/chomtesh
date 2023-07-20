@@ -231,7 +231,8 @@ function rundomainscan(){
     
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
       dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
-      portscanner "$results/subdomains.txt" "$results/naabuout.csv"
+      portscanner "$results/dnsxresolved.txt" "$results/naabuout.csv"
+      [[ -e $dnsxresolved && -e $naabuout ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${MAGENTA}Http Probing excluding port 80 & 443${NC}"
       httpprobing "$hostport-tmp" "$results/httpxout2.csv"
