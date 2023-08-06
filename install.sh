@@ -47,6 +47,14 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing git ${NC}"
         apt install git -y 2>/dev/null | pv -p -t -e -N "Installing Tool: git" >/dev/null
     fi
+    if ! check_exist jq; then
+        echo "${YELLOW}[*] Installing jq ${NC}"
+        apt install jq -y 2>/dev/null | pv -p -t -e -N "Installing Tool: jq" >/dev/null
+    fi
+    if ! check_exist lolcat; then
+        echo "${YELLOW}[*] Installing lolcat ${NC}"
+        apt install lolcat -y 2>/dev/null | pv -p -t -e -N "Installing Tool: lolcat" >/dev/null
+    fi
     if ! check_exist nmap; then
         echo "${YELLOW}[*] Installing nmap ${NC}"
         apt install nmap -y 2>/dev/null | pv -p -t -e -N "Installing Tool: nmap" >/dev/null
@@ -84,7 +92,10 @@ dependency_installer(){
         rm "$(which httpx)" 2>/dev/null
         go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.3.0 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
-    
+    if ! check_exist tlsx; then
+        echo "${YELLOW}[*] Installing TLSx ${NC}"
+        go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: TLSx" >/dev/null
+    fi
     if ! check_exist alterx; then
         echo "${YELLOW}[*] Installing AlterX ${NC}"
         go install github.com/projectdiscovery/alterx/cmd/alterx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: AlterX"
@@ -171,7 +182,8 @@ dependency_installer(){
     fi
     if ! check_exist ccze; then
         echo "${YELLOW}[*] Installing CCZE ${NC}"
-        apt install ccze -y 2>/dev/null  | pv -p -t -e -N "Installing Tool: ccze" &>/dev/null
+        #apt install ccze -y 2>/dev/null  | pv -p -t -e -N "Installing Tool: ccze" &>/dev/null
+        cp ./MISC/ccze /usr/local/bin/
     fi
     if ! check_exist ./MISC/LinkFinder; then
         git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder &>/dev/null
