@@ -14,6 +14,15 @@ CYAN=`tput setaf 6`
 NC=`tput sgr0`
 BOLD='\033[1m'
 wul=`tput smul`
+black='\e[38;5;016m'
+bluebg='\e[1;44m'
+greenbg='\e[1;32m'
+yellowbg='\e[1;33m'
+redbg='\e[1;31m'
+right=$(printf '\u2714')
+cross=$(printf '\u2718')
+upper="${lightblue}╔$(printf '%.0s═' $(seq "80"))╗${end}"
+lower="${lightblue}╚$(printf '%.0s═' $(seq "80"))╝${end}"
 
 core="$PWD/core"
 
@@ -32,6 +41,8 @@ source $core/probeHttp.sh
 source $core/contentDiscovery.sh
 source $core/activeRecon.sh
 source $core/urlRecon.sh
+source $core/hostdiscovery.sh
+source $core/shodaner.sh
 
 
 # sed -i 's/\s\+/ /g' flags.conf
@@ -47,7 +58,7 @@ dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 nuclei_flags=$(grep '^nuclei_flags=' flags.conf | awk -F= '{print $2}' | xargs) 
 
 banner(){
-echo ${GREEN} '
+echo -e '
 
  ██████╗██╗  ██╗ ██████╗ ███╗   ███╗████████╗███████╗   ███████╗██╗  ██╗
 ██╔════╝██║  ██║██╔═══██╗████╗ ████║╚══██╔══╝██╔════╝   ██╔════╝██║  ██║
@@ -55,7 +66,7 @@ echo ${GREEN} '
 ██║     ██╔══██║██║   ██║██║╚██╔╝██║   ██║   ██╔══╝     ╚════██║██╔══██║
 ╚██████╗██║  ██║╚██████╔╝██║ ╚═╝ ██║   ██║   ███████╗██╗███████║██║  ██║
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝   ╚═╝   ╚══════╝╚═╝╚══════╝╚═╝  ╚═╝
-      '  ${NC}                                                      
+      '  | lolcat -a -d 1                          
 }
 
 function cleanup() {
@@ -82,10 +93,7 @@ function declared_paths(){
 
 print_usage() {
   banner
-  echo "${MAGENTA}"
-  echo "~~~~~~~~~~~"
-  echo " U S A G E"
-  echo "~~~~~~~~~~~"
+  echo -e "${bluebg} U S A G E${NC}"
   echo "Usage: ./chomte.sh -p <ProjectName> -d <domain.com> [option]"
   echo "Usage: ./chomte.sh -p <ProjectName> -i <127.0.0.1> [option]"
   echo "Usage: ./chomte.sh -p projectname -d example.com -brt -jsd -sto -n -cd -e -js -ex "
@@ -93,16 +101,17 @@ print_usage() {
   echo "Usage: ./chomte.sh -p projectname -i 127.0.0.1"
   echo "Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex"
   echo "${NC}"
-  echo "  Mandatory Flags:"
+  echo -e "${bluebg}Mandatory Flags:${NC}"
   echo "    -p   | --project <string>       : Specify Project Name here"
   echo "    -d   | --domain <string>        : Specify Root Domain here / Domain List here"
   echo "      OR          "
-  echo "    -i   | --ip <string>            : Specify IP / CIDR/ IPlist here"
+  echo "    -i   | --ip <string>            : Specify IP / IPlist here - Starts with Naabu"
+  echo "    -c   | --cidr | --asn <string>  : CIDR / ASN - Starts with Nmap Host Discovery"
   echo "      OR          "
   echo "    -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List"
-  echo ""  
-  echo "Optional Flags - ${wul}Only applicable with domain -d flag${NC}"
+  printf "\n${upper}\n\tOptional Flags - ${wul}Only applicable with domain -d flag${NC}\n${lower}\n"
   echo ""
+  echo -e ""
   echo "    -sd | --singledomain            : Single Domain for In-Scope Engagement"
   echo "    -pp   | --portprobe             : Probe HTTP web services in ports other than 80 & 443"
   echo "    -a   | --all                    : Run all required scans"
@@ -110,9 +119,10 @@ print_usage() {
   echo "    -brt | --dnsbrute               : DNS Recon Bruteforce"
   echo "        -ax | --alterx              : Subdomain Bruteforcing using DNSx on Alterx Generated Domains"
   echo "    -sto | --takeover               : Subdomain Takeover Scan"
-  echo ""
-  echo "Global Flags - ${wul}Applicable with both -d / -i ${NC}"
- 
+  
+  echo -e ""
+  printf "\n${upper}\n\tGlobal Flags - ${wul}Applicable with both -d / -i ${NC}\n${lower}\n"
+  echo "    -s   | --shodan                    : Shodan Deep Recon - API Key Required"
   echo "    -n   | --nmap                      : Nmap Scan against open ports"
   echo "    -e   | --enum                      : Active Recon"
   echo "       -cd  | --content                : Content Discovery Scan"
@@ -121,7 +131,6 @@ print_usage() {
   echo "       -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag"  
   echo "       -nf  | --nucleifuzz             : Nuclei Fuzz; applicable with enum -e flag" 
   echo "    -h   | --help                      : Show this help"
-  echo ""
   echo "${NC}"
   exit
 }
@@ -131,7 +140,7 @@ function domaindirectorycheck(){
     if [ -d $results ]
     then
         echo -e
-        echo -e "${BLUE}[I] $results Directory already exists: $results\n${NC}"
+        echo -e "${yellowbg}[I] $results Directory already exists: $results\n${NC}"
     else
         mkdir -p $results
         echo -e "${BLUE}[I] $results Directory Created: $results\n${NC}" 
@@ -147,12 +156,12 @@ for tool in "${required_tools[@]}"; do
 done
 if [ ${#missing_tools[@]} -ne 0 ]; then
     echo -e ""
-    echo -e "${RED}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
+    echo -e "${redbg}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
     exit 1
 fi
 
 function var_checker(){
-  echo -e "${BLUE}[*] Checking for required arguments...${NC}"
+  echo -e "${yellowbg}[*] Checking for required arguments...${NC}"
 	if [[ -z ${project} ]]; then
 		echo -e "${RED}[-] ERROR: Project Name is not set${NC}"
 		echo -e "${RED}[-] Missing -p ${NC}"
@@ -162,9 +171,10 @@ function var_checker(){
     domaindirectorycheck
   fi
 
-  if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true ]];then
+  if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true || ${casnscan} == true ]];then
     [[ ${domainscan} == true ]] && rundomainscan
     [[ ${ipscan} == true ]] && runipscan
+    [[ ${casnscan} == true ]] && runcidrscan
     [[ ${hostportscan} == true ]] && runhostportscan
   else
     echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d ${NC}"    
@@ -189,6 +199,7 @@ function rundomainscan(){
     #---------------------------------------------------#
     getsubdomains "$domain" "$results/subdomains.txt"
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
+    [[ $shodan == "true" ]] && shodun "$domain"
     httpprobing $subdomains $results/httpxout.csv
     [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv
     [[ "$takeover" == true ]] && subdomaintakeover
@@ -281,6 +292,21 @@ function runipscan(){
   fi
 }
 
+function runcidrscan(){
+  echo -e "CIDR/ASN Module $casn"
+  echo -e "${MAGENTA}[*] CIDR/ASN Scan is Running on $cidr $asn $casn${NC}"
+  declared_paths
+  declare
+  nmapdiscovery $casn
+  portscanner "$aliveip" "$results/naabuout.csv"
+  httpprobing "$ipport" "$results/httpxout.csv"
+  [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
+  if [[ $enum == true || "$all" == true ]]; then
+      [[ -e $httpxout || "$all" == true ]] && active_recon
+      [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
+  fi
+}
+
 function runhostportscan(){
   echo -e "${MAGENTA}[*] HostPort Scan is Running on $hostportlist${NC}"
   if [ -n "${hostportlist}" ];then
@@ -326,8 +352,17 @@ while [[ $# -gt 0 ]]; do
       ipscan=true
       shift
       ;;
+    -c|--cidr|--asn)
+      casn="$2"
+      casnscan=true
+      shift
+      ;;
     -a|--all)
       all=true
+      shift
+      ;;
+    -s|--shodan)
+      shodan=true
       shift
       ;;
     -pp|--portprobe)

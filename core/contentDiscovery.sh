@@ -10,7 +10,7 @@ function content_discovery(){
         if [ -d $enumscan/contentdiscovery ] && [ ! -f $enumscan/contentdiscovery/all-cd.csv ]; then
             cat $enumscan/contentdiscovery/*.csv | head -n1 > $enumscan/contentdiscovery/all-cd.csv
             cat $enumscan/contentdiscovery/*.csv | grep -v 'FUZZ,url,redirectlocation' | anew $enumscan/contentdiscovery/all-cd.csv
-            csvcut -c redirectlocation,content_length $enumscan/contentdiscovery/all-cd.csv | grep '200' | cut -d , -f 1 | anew $enumscan/contentdiscovery/all-cd.txt
+            csvcut -c redirectlocation,status_code $enumscan/contentdiscovery/all-cd.csv | grep '200' | cut -d , -f 1 | anew -q $enumscan/contentdiscovery/all-cd.txt
             echo -e "${GREEN}[*] Merged All Content Discovery Scan CSV - ${NC}$enumscan/contentdiscovery/all-cd.csv\n"
         fi
     }
