@@ -13,22 +13,27 @@
 
 </div>
 
-CHOMTE.SH is a powerful shell script designed to automate reconnaissance tasks during penetration testing. It utilizes various Go-based tools to gather information and identify the attack surface, making it a valuable asset for bug bounty hunters and penetration testers.
+CHOMTE.SH is a powerful Framwork designed to automate reconnaissance tasks during penetration testing. It utilizes various Go-based tools to gather information, identify the attack surface and common misconfigurations / vulnerabilities making it a valuable asset for bug bounty hunters and penetration testers. This can also be used for Internal / External Network Pentesting Engagements.
 <br>
 
-![chomtesh_usage](https://i.imgur.com/ezSLYjN.png)
+![chomtesh_usage](https://i.imgur.com/ajBUjdx.png)
 
-## Features
+## Major Features
 CHOMTE.SH has the following features:
 
 1. Gather Subdomains using subfinder: This feature allows you to gather subdomains using the subfinder tool.
 2. DNS Subdomain Bruteforcing using dmut: This feature enables DNS subdomain bruteforcing using the dmut tool.
 3. Quick Port Scan using Naabu: This feature allows for quick port scanning using the Naabu tool.
-4. Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
+4. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
+7. Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
 5. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
-6. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
+6. Content Discovery Scan: Find sensitive files exposed in WebApplications
+7. Common Misconfigurations & Vulnerabilities of Infrastructure / WebApplications
+8. Internet Deep Recon: Shodan / Certificate Transperency
+9. Command Transperency: You will able to see commands what is running, where it is saving files...
+10. JavaScript Reon: Hardcoded credentials / Sensitive Keys / Passwords
 
-![chomtesh_MindMap](https://i.imgur.com/xVr74XT.png)
+![chomtesh_MindMap](https://i.imgur.com/zO7MyLd.png)
 
 ## Installation
 To install CHOMTE.SH, follow these steps:
@@ -128,6 +133,12 @@ Here are some example commands:
 | Perform Nmap scan on open ports | ./chomte.sh -p projectname -i IPs-list.txt -n |
 | Perform host:port http probing & enum | ./chomte.sh -p projectname -hpl hostportlist.txt -e -cd |
 
+### Internet Deep Recon
+Shodan Recon Setup
+```
+cd chomtesh
+echo 'SHODAN-API-KEY' > .token
+```
 ### Horizontal Recon - To gather Root / TLD using crt.sh
 Here are some example commands:
 ```
