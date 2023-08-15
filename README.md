@@ -25,13 +25,14 @@ CHOMTE.SH has the following features:
 2. DNS Subdomain Bruteforcing using dmut: This feature enables DNS subdomain bruteforcing using the dmut tool.
 3. Quick Port Scan using Naabu: This feature allows for quick port scanning using the Naabu tool.
 4. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
-7. Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
-5. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
-6. Content Discovery Scan: Find sensitive files exposed in WebApplications
-7. Common Misconfigurations & Vulnerabilities of Infrastructure / WebApplications
-8. Internet Deep Recon: Shodan / Certificate Transperency
-9. Command Transperency: You will able to see commands what is running, where it is saving files...
-10. JavaScript Reon: Hardcoded credentials / Sensitive Keys / Passwords
+5. Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
+6. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
+7. Content Discovery Scan: Find sensitive files exposed in WebApplications
+8. Common Misconfigurations & Vulnerabilities of Infrastructure / WebApplications
+9. Internet Deep Recon: Shodan / Certificate Transperency
+10. Command Transperency: You will able to see commands what is running, where it is saving files...
+11. JavaScript Reon: Hardcoded credentials / Sensitive Keys / Passwords
+12. Customizable Flags: Tool arguments can be change by modifying flags.conf file 
 
 ![chomtesh_MindMap](https://i.imgur.com/zO7MyLd.png)
 
