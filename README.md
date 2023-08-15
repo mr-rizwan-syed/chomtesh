@@ -59,37 +59,42 @@ To use CHOMTE.SH, run the script with the following flags:
 ╚██████╗██║  ██║╚██████╔╝██║ ╚═╝ ██║   ██║   ███████╗██╗███████║██║  ██║
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝   ╚═╝   ╚══════╝╚═╝╚══════╝╚═╝  ╚═╝
 
-
-~~~~~~~~~~~
  U S A G E
-~~~~~~~~~~~
 Usage: ./chomte.sh -p <ProjectName> -d <domain.com> [option]
 Usage: ./chomte.sh -p <ProjectName> -i <127.0.0.1> [option]
-Usage: ./chomte.sh -p projectname -d example.com -brt -ax -pp -sto -n -cd -e -ex
+Usage: ./chomte.sh -p projectname -d example.com -brt -jsd -sto -n -cd -e -js -ex
 Usage: ./chomte.sh -p projectname -d Domains-list.txt
 Usage: ./chomte.sh -p projectname -i 127.0.0.1
-Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -ru -nf -cd -ex
+Usage: ./chomte.sh -p projectname -i IPs-list.txt -n -cd -e -js -ex
 
-  Mandatory Flags:
+Mandatory Flags:
     -p   | --project <string>       : Specify Project Name here
     -d   | --domain <string>        : Specify Root Domain here / Domain List here
       OR
-    -i   | --ip <string>            : Specify IP / CIDR/ IPlist here
+    -i   | --ip <string>            : Specify IP / IPlist here - Starts with Naabu
+    -c   | --cidr | --asn <string>  : CIDR / ASN - Starts with Nmap Host Discovery
       OR
     -hpl | --hostportlist <filename>: HTTP Probing on Host:Port List
 
-Optional Flags - Only applicable with domain -d flag
+╔════════════════════════════════════════════════════════════════════════════════╗
+        Optional Flags - Only applicable with domain -d flag
+╚════════════════════════════════════════════════════════════════════════════════╝
+
 
     -sd | --singledomain            : Single Domain for In-Scope Engagement
     -pp   | --portprobe             : Probe HTTP web services in ports other than 80 & 443
-         -n   | --nmap                      : Nmap Scan against open ports
     -a   | --all                    : Run all required scans
     -rr   | --rerun                 : ReRun the scan again
     -brt | --dnsbrute               : DNS Recon Bruteforce
         -ax | --alterx              : Subdomain Bruteforcing using DNSx on Alterx Generated Domains
     -sto | --takeover               : Subdomain Takeover Scan
 
-Global Flags - Applicable with both -d / -i
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+        Global Flags - Applicable with both -d / -i
+╚════════════════════════════════════════════════════════════════════════════════╝
+    -s   | --shodan                    : Shodan Deep Recon - API Key Required
+    -n   | --nmap                      : Nmap Scan against open ports
     -e   | --enum                      : Active Recon
        -cd  | --content                : Content Discovery Scan
        -cd  | --content subdomains.txt : Content Discovery Scan
@@ -97,6 +102,7 @@ Global Flags - Applicable with both -d / -i
        -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag
        -nf  | --nucleifuzz             : Nuclei Fuzz; applicable with enum -e flag
     -h   | --help                      : Show this help
+
 ```
 ### Mandatory Flags
 - -p or --project: Specify the project name here.
