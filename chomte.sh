@@ -213,8 +213,8 @@ function rundomainscan(){
       [[ -e $dnsxresolved && -e $naabuout ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
-      [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv"
-      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
+      [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv" 
+      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv 2>/dev/null
       [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
     
