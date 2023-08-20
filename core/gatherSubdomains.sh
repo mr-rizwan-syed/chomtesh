@@ -10,10 +10,10 @@ function getsubdomains(){
   subdomains=$2
 
   [[ ! -e $subdomains ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags| anew -q $subdomains ${NC}"
-  [[ ! -e $subdomains ]] && subfinder -d $domain $subfinder_flags| anew -q $subdomains &>/dev/null 2>&1
+  [[ ! -e $subdomains ]] && subfinder -d $domain $subfinder_flags 2>/dev/null | anew -q $subdomains &>/dev/null 2>&1
   
   [[ -e $subdomains && $rerun == true ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags| anew -q $results/subdomains.tmp ${NC}"
-  [[ -e $subdomains && $rerun == true ]] && subfinder -d $domain $subfinder_flags| anew -q $results/subdomains.tmp &>/dev/null 2>&1
+  [[ -e $subdomains && $rerun == true ]] && subfinder -d $domain $subfinder_flags 2>/dev/null| anew -q $results/subdomains.tmp &>/dev/null 2>&1
   [[ -e "$results/subdomains.tmp" ]] && grep -Fxvf $subdomains $results/subdomains.tmp > $results/newsubdomains.tmp
 
   [[ -e $results/newsubdomains.tmp ]] && nsdc=$(<$results/newsubdomains.tmp wc -l)

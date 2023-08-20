@@ -21,11 +21,11 @@ function httpprobing(){
   
   if [ -f "$hostlist" ]; then
     [[ ! -e $httpxout || $rerun == true ]] && echo -e "${BLUE}[#] cat $hostlist | httpx $httpx_flags -csv | anew -q $httpxout ${NC}"
-    [[ ! -e $httpxout || $rerun == true ]] && cat $hostlist | httpx $httpx_flags -csv | anew -q $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+    [[ ! -e $httpxout || $rerun == true ]] && cat $hostlist | httpx $httpx_flags -csv 2>/dev/null| anew -q $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
     [ -e $httpxout ] && echo -e "${GREEN}[+] HTTP Probe Output:${NC} $httpxout"
   else
     echo "${BLUE}[#] echo $hostlist | httpx $httpx_flags -csv | anew -q $httpxout ${NC}"
-    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx $httpx_flags -csv | anew -q $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
+    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx $httpx_flags -csv 2>/dev/null| anew -q $httpxout | pv -p -t -e -N "HTTPX Probing is Ongoing" > /dev/null
   fi
 
   [[ ! -e $urlprobed || $rerun == true ]] && csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
@@ -37,17 +37,17 @@ function httpprobing(){
 
   if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]];then
       echo -e "${YELLOW}[*] Extracting Potential Host URLs${NC}"
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
   fi
   
   if [[ ${domainscan} == true ]];then
       echo -e "${YELLOW}[*] Extracting Potential Subdomain URLs${NC}"
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout | awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
   fi
        
-  [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' | sort -u | anew -q $potentialsdurls &>/dev/null 2>&1
+  [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' | sort -u| anew -q $potentialsdurls &>/dev/null 2>&1
   rm $potentialsdurls-tmp 
         
   purlc=$(<$potentialsdurls wc -l)
