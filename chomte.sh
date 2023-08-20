@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       5.0.1
+#version:       5.0.0
 #==============================================================================
 
 RED=`tput setaf 1`
