@@ -25,15 +25,15 @@ function portscanner(){
         echo -e ""
         echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
         [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -list $portscannerin $naabu_flags -o $naabuout -csv" ${NC}
-        [[ ! -e $naabuout || $rerun == true ]] && naabu -list $portscannerin $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
-        [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null 2>&1   
+        [[ ! -e $naabuout || $rerun == true ]] && naabu -list $portscannerin $naabu_flags -o $naabuout -csv 2>/dev/null| pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
+        [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout 2>/dev/null| grep -v ip | anew $aliveip -q &>/dev/null 2>&1   
         [[ ! -e $ipport || $rerun == true ]] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
         echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}
     else
         echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
         [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -host $portscannerin $naabu_flags -o $naabuout -csv" ${NC}
-        [[ ! -e $naabuout || $rerun == true ]] && naabu -host $portscannerin $naabu_flags -o $naabuout -csv | pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
-        [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout | grep -v ip | anew $aliveip -q &>/dev/null
+        [[ ! -e $naabuout || $rerun == true ]] && naabu -host $portscannerin $naabu_flags -o $naabuout -csv 2>/dev/null| pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
+        [[ ! -e $aliveip || $rerun == true ]] && csvcut -c ip $naabuout 2>/dev/null| grep -v ip | anew $aliveip -q &>/dev/null
         [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | anew $hostport -q &>/dev/null         
         [[ ! -e $ipport || $rerun == true ]] && csvcut -c ip,port $naabuout 2>/dev/null | tr ',' ':' | anew $ipport -q &>/dev/null
         echo -e ${GREEN}"[+] Quick Port Scan Completed $naabuout" ${NC}

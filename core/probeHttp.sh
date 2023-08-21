@@ -29,7 +29,7 @@ function httpprobing(){
   fi
 
   [[ ! -e $urlprobed || $rerun == true ]] && csvcut $httpxout -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
-  [[ "$all" == true && -f "$results/httpxout2.csv" ]] && csvstack $results/httpxout.csv $results/httpxout2.csv | csvcut -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
+  [[ "$all" == true && -f "$results/httpxout2.csv" ]] && csvstack $results/httpxout.csv $results/httpxout2.csv 2>/dev/null | csvcut -c url 2>/dev/null | grep -v url | anew $urlprobed &>/dev/null 2>&1
   
   urlpc=$(<$urlprobed wc -l)
   echo -e "${GREEN}${BOLD}[$] Total Subdomain URL Probed ${NC}[$urlpc] [$urlprobed]"
@@ -47,10 +47,10 @@ function httpprobing(){
       [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
   fi
        
-  [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' | sort -u| anew -q $potentialsdurls &>/dev/null 2>&1
-  rm $potentialsdurls-tmp 
+  [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' 2>/dev/null| sort -u| anew -q $potentialsdurls &>/dev/null 2>&1
+  rm $potentialsdurls-tmp 2>/dev/null
         
-  purlc=$(<$potentialsdurls wc -l)
+  purlc=$(<$potentialsdurls wc -l 2>/dev/null)
   echo -e "${GREEN}${BOLD}[$] Potential Subdomain URLs Extracted ${NC}[$purlc] [$potentialsdurls]"
 
   # echo -e "${GREEN}[+] HTTPX Probe Completed\n${NC}"

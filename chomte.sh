@@ -201,9 +201,9 @@ function rundomainscan(){
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ $shodan == "true" ]] && shodun "$domain"
     httpprobing $subdomains $results/httpxout.csv
-    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv
+    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv 
     [[ "$takeover" == true ]] && subdomaintakeover
-    [[ -s $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout.csv"
+    [[ -s $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout.csv" 
     [[ ! -e $results/newsubdomains.tmp ]] && httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
     
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
@@ -214,7 +214,7 @@ function rundomainscan(){
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
       [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv" 
-      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv 2>/dev/null
+      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
       [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
     
