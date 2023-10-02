@@ -35,7 +35,7 @@ function httpprobing(){
   echo -e "${GREEN}${BOLD}[$] Total Subdomain URL Probed ${NC}[$urlpc] [$urlprobed]"
 
 
-  if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]];then
+  if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]] || [[ ${casnscan} == true ]];then
       echo -e "${YELLOW}[*] Extracting Potential Host URLs${NC}"
       [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
       [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
