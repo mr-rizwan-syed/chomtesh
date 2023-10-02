@@ -229,7 +229,7 @@ dependency_installer(){
     check_exist "./MISC/technologies.json" || wget -q https://raw.githubusercontent.com/rverton/webanalyze/master/technologies.json -P ./MISC/
     check_exist "$HOME/.gf/excludeExt.json" || cp ./MISC/excludeExt.json "$HOME/.gf/"
 }
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
 required_directories=(
     "./MISC/LinkFinder"
     "./MISC/SecretFinder"
