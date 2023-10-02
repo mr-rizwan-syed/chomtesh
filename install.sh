@@ -59,6 +59,14 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing nmap ${NC}"
         apt install nmap -y 2>/dev/null | pv -p -t -e -N "Installing Tool: nmap" >/dev/null
     fi
+    if ! check_exist asnmap; then
+        echo "${YELLOW}[*] Installing ASNmap ${NC}"
+        go install github.com/projectdiscovery/asnmap/cmd/asnmap@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: ASNmap" >/dev/null
+    fi
+    if ! check_exist mapcidr; then
+        echo "${YELLOW}[*] Installing mapCIDR ${NC}"
+        go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: mapCIDR" >/dev/null
+    fi
     if ! check_exist xsltproc; then
         echo "${YELLOW}[*] Installing xsltproc ${NC}"
         apt install xsltproc -y 2>/dev/null | pv -p -t -e -N "Installing Tool: xsltproc" >/dev/null
