@@ -237,6 +237,7 @@ required_directories=(
     "./MISC/xnLinkFinder"
     "./MISC/fuzzing-templates"
     "./MISC/fingerprints.json"
+    "./MISC/technologies.json"
     "$HOME/.gf/excludeExt.json"
     "/usr/share/dirb/wordlists/dicc.txt"
 )
