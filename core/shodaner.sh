@@ -128,6 +128,15 @@ favicons(){
     [[ -s $shodanresults/favicons_hashes${target}.txt ]] && cat $shodanresults/favicons_${target}.txt | nuclei -t MISC/favicon-detect.yaml | anew -q $shodanresults/favicons_hash_tech_${target}.txt
 }
 
+asn(){
+    echo -e "${bluebg}ASN [ Autonomous System Lookup (AS / ASN / IP) ]${NC}"
+    asn=$(zcat $shodanresults/Collect/*.json.gz | jq -r 'select(.asn != null)|.asn' 2> /dev/null | sort -u)
+	printf "${asn}\n" | while read -r asnline; do
+		name=$(host -t TXT "${asnline}.asn.cymru.com" | grep -v "NXDOMAIN" | awk -F'|' 'NR==1{print substr($NF,2,length($NF)-2)}')
+		echo $name | sort -u | anew -q $shodanresults/asn_${target}.txt
+	;done
+}
+
 shodun(){
     target="$1"
     shodanresults=$results/Shodan
@@ -147,6 +156,7 @@ shodun(){
     [[ -s "$shodanresults/main_${target}.data" && ! -e "$shodanresults/ips_inscope_${target}.txt" ]] && inscope_ip
     [[ -s "$shodanresults/main_${target}.data" && ! -e "$shodanresults/out_of_scope_ip_${target}.txt" ]] && out_of_scope_ip
     [[ ! -s $shodanresults/favicons_${target}.txt ]] && favicons
+    [[ ! -s $shodanresults/asn_${target}.txt ]] && asn
 }
 
 
