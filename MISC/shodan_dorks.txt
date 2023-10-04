@@ -325,3 +325,6 @@ GaugeTech Electricity Meters::Server: EIG Embedded Web Server "200 Document foll
 DICOM Medical X-Ray Machines::DICOM Server Response port:104 hostname:"*.$targetdomain"
 Unprotected VNC::authentication disabled "RFB 003.008" hostname:"*.$targetdomain"
 Windows RDP::\x03\x00\x00\x0b\x06\xd0\x00\x00\x124\x00 hostname:"*.$targetdomain"
+SonicWall SMA1000 LFI::title:"Appliance Management Console Login" hostname:"*.$targetdomain"
+SonicWall SMA1000 LFI::title:"Appliance Management Console Login" ssl.cert.subject.cn:"$targetdomain"
+SonicWall SMA1000 LFI::title:"Appliance Management Console Login" ssl:"$targetdomain"
