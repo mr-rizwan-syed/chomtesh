@@ -95,6 +95,8 @@ inscope_ip(){
     | tlsx -silent -san -cn | anew -q $shodanresults/allhttpCN_${target}.txt
 
     cat $shodanresults/allhttpCN_${target}.txt | cut -d ' ' -f 2 | sort -u | sed 's/^\[//; s/\]$//' | grep $target | anew -q $shodanresults/domains.txt
+    echo -e "${greenbg}New Subdomains Collected via Shodan:${NC} $(cat $shodanresults/domains.txt | anew -d $subdomains| wc -l)"
+    echo -e "Subdomains appended to $subdomains file: $(cat $shodanresults/domains.txt | anew $subdomains)"
 
     cat $shodanresults/httprobe_${target}.txt \
     | tlsx -silent -so | anew -q $shodanresults/subjectOrg_${target}.txt
@@ -119,14 +121,14 @@ out_of_scope_ip(){
 }
 
 favicons(){
-   	echo -e "${bluebg}Favicons [ Validated URLs via Shodan Collects ]${NC}"
+    echo -e "${bluebg}Favicons [ Validated URLs via Shodan Collects ]${NC}"
     zcat $shodanresults/Collect/*.json.gz | jq -r '.http.favicon.location|select (.!= null)'| sort -u | grep -v "^data:" | anew -q $shodanresults/favicons_${target}.txt
 
     echo -e "${bluebg}Favicon Hash [ Generated Favicon Hash using HTTPX ]${NC}"
     [[ -s $shodanresults/favicons_${target}.txt ]] && cat $shodanresults/favicons_${target}.txt | httpx -silent -favicon | anew -q $shodanresults/favicons_hashes${target}.txt
 
-    echo -e "${bluebg}Technology Detection of Favicon Hash${NC}"
-    [[ -s $shodanresults/favicons_hashes${target}.txt ]] && cat $shodanresults/favicons_hashes${target}.txt | nuclei -t MISC/favicon-detect.yaml | anew -q $shodanresults/favicons_hash_tech_${target}.txt
+    echo -e "${bluebg}Technology Detection of Favicon Hash${NC} >> $shodanresults/favicons_hash_tech_${target}.txt"
+    [[ -s $shodanresults/favicons_hashes${target}.txt ]] && cat $shodanresults/favicons_${target}.txt | nuclei -t MISC/favicon-detect.yaml | anew -q $shodanresults/favicons_hash_tech_${target}.txt
 }
 
 shodun(){
