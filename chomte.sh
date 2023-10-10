@@ -57,6 +57,11 @@ dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | x
 dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 nuclei_flags=$(grep '^nuclei_flags=' flags.conf | awk -F= '{print $2}' | xargs) 
 
+ip_flags(){
+  naabu_flags=$(grep '^ip_naabu_flags=' flags.conf | awk -F= '{print $2}' | xargs)
+  httpx_flags=$(grep '^ip_httpx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
+}
+
 banner(){
 echo -e '
 
@@ -173,9 +178,9 @@ function var_checker(){
 
   if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true || ${casnscan} == true ]];then
     [[ ${domainscan} == true ]] && rundomainscan
-    [[ ${ipscan} == true ]] && runipscan
-    [[ ${casnscan} == true ]] && runcidrscan
-    [[ ${hostportscan} == true ]] && runhostportscan
+    [[ ${ipscan} == true ]] && ip_flags && runipscan
+    [[ ${casnscan} == true ]] && ip_flags && runcidrscan
+    [[ ${hostportscan} == true ]] && ip_flags && runhostportscan
   else
     echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d ${NC}"    
   fi
@@ -283,6 +288,7 @@ function runipscan(){
   echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
   declared_paths
   declare
+
   portscanner "$ip" "$results/naabuout.csv"
   httpprobing "$ipport" "$results/httpxout.csv"
   [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
