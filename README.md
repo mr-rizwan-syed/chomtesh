@@ -12,8 +12,8 @@
 [![GitHub Follow](https://img.shields.io/github/stars/mr-rizwan-syed/chomtesh?label=sTARS&amp;logo=Github&amp;style=for-the-badge)](https://github.com/chomtesh)
 
 </div>
-
-CHOMTE.SH is a powerful Framwork designed to automate reconnaissance tasks during penetration testing. It utilizes various Go-based tools to gather information, identify the attack surface and common misconfigurations / vulnerabilities making it a valuable asset for bug bounty hunters and penetration testers. This can also be used for Internal / External Network Pentesting Engagements.
+CHOMTE.SH is a versatile framework designed for automating reconnaissance tasks in penetration testing. It's useful for bug bounty hunters and penetration testers in both internal and external network engagements. Its key features include subdomain gathering, DNS subdomain brute-forcing, quick port scanning, HTTP probing, service enumeration, and generating reports in various formats. Additionally, it performs content discovery, identifies common misconfigurations and vulnerabilities, conducts deep internet reconnaissance, provides command transparency, and specializes in JavaScript reconnaissance. Users can customize tool arguments by modifying the flags.conf file.
+<br>
 <br>
 
 ![chomtesh_usage](https://i.imgur.com/ajBUjdx.png)
