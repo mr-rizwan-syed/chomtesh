@@ -57,11 +57,6 @@ dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | x
 dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
 nuclei_flags=$(grep '^nuclei_flags=' flags.conf | awk -F= '{print $2}' | xargs) 
 
-ip_flags(){
-  naabu_flags=$(grep '^ip_naabu_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-  httpx_flags=$(grep '^ip_httpx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-}
-
 banner(){
 echo -e '
 
@@ -83,7 +78,7 @@ trap cleanup SIGINT
 
 function declared_paths(){
   subdomains="$results/subdomains.txt"
-  naabuout="$results/naabu.csv"
+  naabuout="$results/naabuout"
   nmapscans="$results/nmapscans"
   aliveip="$results/aliveip.txt"
   httpxout="$results/httpxout.csv"
@@ -178,9 +173,9 @@ function var_checker(){
 
   if [[ ${ipscan} == true ]] || [[ ${domainscan} == true || ${hostportscan} == true || ${casnscan} == true ]];then
     [[ ${domainscan} == true ]] && rundomainscan
-    [[ ${ipscan} == true ]] && ip_flags && runipscan
-    [[ ${casnscan} == true ]] && ip_flags && runcidrscan
-    [[ ${hostportscan} == true ]] && ip_flags && runhostportscan
+    [[ ${ipscan} == true ]] && runipscan
+    [[ ${casnscan} == true ]] && runcidrscan
+    [[ ${hostportscan} == true ]] && runhostportscan
   else
     echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d ${NC}"    
   fi
@@ -214,8 +209,8 @@ function rundomainscan(){
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
       echo -e "${YELLOW}[*] Probing HTTP web services in ports other than 80 & 443${NC}"
       dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
-      portscanner "$results/dnsxresolved.txt" "$results/naabuout.csv"
-      [[ -e $dnsxresolved && -e $naabuout ]] && portmapper
+      portscanner "$results/dnsxresolved.txt" $naabuout
+      [[ -e $dnsxresolved && -e $naabuout.csv ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
       [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv" 
@@ -243,12 +238,12 @@ function rundomainscan(){
     [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
     httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
     
-    [ ! -e $hostport ] && csvcut -c host,port $naabuout 2>/dev/null | tr ',' ':' | grep -v 'host:port' | anew $hostport -q &>/dev/null
+    [ ! -e $hostport ] && csvcut -c host,port $naabuout.csv 2>/dev/null | tr ',' ':' | grep -v 'host:port' | anew $hostport -q &>/dev/null
     
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
       dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
-      portscanner "$results/dnsxresolved.txt" "$results/naabuout.csv"
-      [[ -e $dnsxresolved && -e $naabuout ]] && portmapper
+      portscanner "$results/dnsxresolved.txt" $naabuout
+      [[ -e $dnsxresolved && -e $naabuout.csv ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${MAGENTA}Http Probing excluding port 80 & 443${NC}"
       httpprobing "$hostport-tmp" "$results/httpxout2.csv"
@@ -269,7 +264,7 @@ function rundomainscan(){
     results="$results/$domain"
     declared_paths
     declare
-    portscanner "$domain" "$results/naabuout.csv"
+    portscanner "$domain" $naabuout
     httpprobing "$hostport" "$results/httpxout.csv"
     [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
 
@@ -288,8 +283,7 @@ function runipscan(){
   echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
   declared_paths
   declare
-
-  portscanner "$ip" "$results/naabuout.csv"
+  portscanner "$ip" $naabuout
   httpprobing "$ipport" "$results/httpxout.csv"
   [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
   if [[ $enum == true || "$all" == true ]]; then

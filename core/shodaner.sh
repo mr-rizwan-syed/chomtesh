@@ -131,10 +131,10 @@ favicons(){
 asn(){
     echo -e "${bluebg}ASN [ Autonomous System Lookup (AS / ASN / IP) ]${NC}"
     asn=$(zcat $shodanresults/Collect/*.json.gz | jq -r 'select(.asn != null)|.asn' 2> /dev/null | sort -u)
-    printf "${asn}\n" | while read -r asnline; do
-        name=$(host -t TXT "${asnline}.asn.cymru.com" | grep -v "NXDOMAIN" | awk -F'|' 'NR==1{print substr($NF,2,length($NF)-2)}')
-        echo $name | sort -u | anew -q $shodanresults/asn_${target}.txt
-    done
+	printf "${asn}\n" | while read -r asnline; do
+		name=$(host -t TXT "${asnline}.asn.cymru.com" | grep -v "NXDOMAIN" | awk -F'|' 'NR==1{print substr($NF,2,length($NF)-2)}')
+		echo $name | sort -u | anew -q $shodanresults/asn_${target}.txt
+	done
 }
 
 shodun(){

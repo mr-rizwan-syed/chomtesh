@@ -61,7 +61,7 @@ nmapdiscovery(){
     fi
     # Check if it's a valid ASN
     if is_asn "$casn"; then
-        echo -e "ASN: $casn >> \n$(asnmap -a $casn -silent)"
+        echo -e "ASN: $casn \n$(asnmap -a $casn -silent)"
         asnip=$(asnmap -a $casn -silent)
         echo "$asnip" | while IFS= read -r cidr; do hostdiscovery $cidr; done
     fi

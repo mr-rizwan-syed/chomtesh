@@ -7,9 +7,9 @@
 function portmapper(){
     mapper(){
         while read dnshost; do
-            if grep -q "$dnshost" $naabuout; then
+            if grep -q "$dnshost" $naabuout.csv; then
                 subdomains=($(grep "$dnshost" $dnsreconout | cut -d ' ' -f 1))
-                ports=($(grep -w "$dnshost" $naabuout | awk -F ',' '{print $3}'))
+                ports=($(grep -w "$dnshost" $naabuout.csv | awk -F ',' '{print $2}'))
                 for subdomain in "${subdomains[@]}"; do
                     for port in "${ports[@]}"; do
                         echo "${subdomain}:${port}" | anew -q $hostport
@@ -18,6 +18,6 @@ function portmapper(){
             fi
         done < $dnsxresolved
     }
-    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains${NC} $dnsprobe $naabuout" 
+    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains${NC} $dnsprobe $naabuout.csv" 
     mapper
 }
