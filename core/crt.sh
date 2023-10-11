@@ -1,4 +1,14 @@
 #!/bin/bash
+#title: crt.sh CHOMTE.SH
+#description:   Module of Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
+#author:        mr-rizwan-syed
+#version:       1.0.0
+#==============================================================================
+
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+YELLOW=`tput setaf 3`
+BLUE=`tput setaf 4`
 
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -25,41 +35,39 @@ fi
 project=$1
 target=$2
 
+mkdir -p $project
+enctarget=$(echo "$target" | tr ' ' '+')
+
 max_retries=3
 retry_delay=5
 
-mkdir -p $project
-enctarget=$(echo "$target" | tr ' ' '+')
 echo "Fetching Records for $enctarget"
 
-echo "https://crt.sh/?Identity=%25.$enctarget"
+echo "${BLLUE}https://crt.sh/?Identity=%25.$enctarget${NC}"
 
 retries=0
 while [ $retries -lt $max_retries ]; do
-    response=$(curl -fSs -A "Mozilla/5.0" "https://crt.sh/?Identity=%25.$enctarget" -o $project/$enctarget.html -w "%{http_code}")
+    response=$(curl -fSs -A "Mozilla/5.0" "https://crt.sh/?Identity=%25.$enctarget&output=json" -o $project/$enctarget.json -w "%{http_code}")
     if [ $response -ne 200 ]; then
-        echo "Received Negative Response. Retrying..."
+        echo "${YELLOW}Received Negative Response. ${NC}Retrying..."
         sleep $retry_delay
         retries=$((retries + 1))
     else
-        echo "Request successful. Exiting..."
+        echo "${GREEN}Request successful. Exiting...${NC}"
         break
     fi
 done
 
 if [ $retries -eq $max_retries ]; then
-    echo "Maximum retries reached. Exiting..."
+    echo "${RED}Maximum retries reached. Exiting...${NC}"
 fi
 
-cat $project/$enctarget.html | pup 'table tr:nth-child(1) td:nth-child(5) text{}' | grep -v ' ' | anew -q $project/alldomains.txt
-cat $project/$enctarget.html | pup 'table tr:nth-child(1) td:nth-child(6) text{}' | grep -vE 'edgecastcdn.net|cloudflaressl.com' | anew -q $project/alldomains.txt
-cat $project/alldomains.txt | grep -vE "([0-9]{1,3}\.){3}[0-9]{1,3}" | awk -F '.' '{print $(NF-1)"."$NF}' | sort -u | anew -q $project/rootdomains.txt
+cat $project/$enctarget.json | jq -r '.[] | "\(.name_value)\n\(.common_name)"' | grep -vE ' |@|edgecastcdn.net|cloudflaressl.com' | anew -q $project/crt_alldomains.txt
+cat $project/$enctarget.json | jq -r '.[] | "\(.name_value)\n\(.common_name)"' | grep ' ' | anew -q $project/crt_organization.txt
+cat $project/crt_alldomains.txt | grep -vE "([0-9]{1,3}\.){3}[0-9]{1,3}" | awk -F '.' '{print $(NF-1)"."$NF}' | sort -u | anew -q $project/crt_apexdomains.txt
 
-alldcount=$(cat $project/alldomains.txt | wc -l)
-rdcount=$(cat $project/rootdomains.txt | wc -l)
+[ -e "$project/crt_alldomains.txt" ] && alldcount=$(cat $project/crt_alldomains.txt | wc -l)
+[ -e "$project/crt_apexdomains.txt" ] && rdcount=$(cat $project/crt_apexdomains.txt | wc -l)
 
-echo "All Domain count $alldcount"
-echo "Root Domain count $rdcount"
-
-knockknock -n $domain -o $results/rootdomains.txt
-echo "${GREEN} [+] Root Domain count $rdcount ${NC} - $results/rootdomains.txt"
+echo -e "${GREEN} [+] All Collected Domain ${NC} [$alldcount] - $project/crt_alldomains.txt"
+echo -e "${GREEN} [+] Apex Root Domain count ${NC} [$rdcount] - $project/crt_apexdomains.txt"
