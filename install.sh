@@ -54,6 +54,7 @@ dependency_installer(){
     if ! check_exist lolcat; then
         echo "${YELLOW}[*] Installing lolcat ${NC}"
         apt install lolcat -y 2>/dev/null | pv -p -t -e -N "Installing Tool: lolcat" >/dev/null
+        [ -e /usr/games/lolcat ] && mv /usr/games/lolcat /usr/local/bin/
     fi
     if ! check_exist nmap; then
         echo "${YELLOW}[*] Installing nmap ${NC}"
