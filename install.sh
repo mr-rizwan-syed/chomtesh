@@ -181,6 +181,10 @@ dependency_installer(){
         pip3 install ansi2html &>/dev/null
         sudo apt install colorized-logs &>/dev/null
     fi
+    if ! check_exist shodan; then
+        echo "${YELLOW}[*] Installing Shodan ${NC}"
+        apt install python3-shodan -y &>/dev/null
+    fi
     if ! check_exist subjs; then
         echo "${YELLOW}[*] Installing Subjs ${NC}"
         go install -v github.com/lc/subjs@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: subjs" &>/dev/null
@@ -231,7 +235,7 @@ dependency_installer(){
     check_exist "./MISC/technologies.json" || wget -q https://raw.githubusercontent.com/rverton/webanalyze/master/technologies.json -P ./MISC/
     check_exist "$HOME/.gf/excludeExt.json" || cp ./MISC/excludeExt.json "$HOME/.gf/"
 }
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
 required_directories=(
     "./MISC/LinkFinder"
     "./MISC/SecretFinder"
