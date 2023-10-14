@@ -284,22 +284,31 @@ function rundomainscan(){
 }
 
 function runipscan(){
-  echo -e "IP Module $ip $ipscan"
-  echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
-  declared_paths
-  declare
-  portscanner "$ip" $naabuout
-  httpprobing "$ipport" "$results/httpxout.csv"
-  [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
-  if [[ $enum == true || "$all" == true ]]; then
-      [[ -e $httpxout || "$all" == true ]] && active_recon
-      [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
+  ip_pattern='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+  if [[ $ip =~ $ip_pattern ]] && [[ $ip != *"\/"* ]] && [[ $ip != *"AS"* ]]; then
+    echo -e "IP Module $ip $ipscan"
+    echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
+    results="$results/$ip"
+    declared_paths
+    declare
+    portscanner "$ip" $naabuout
+    httpprobing "$ipport" "$results/httpxout.csv"
+    [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
+      if [[ $enum == true || "$all" == true ]]; then
+        [[ -e $httpxout || "$all" == true ]] && active_recon
+        [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
+      fi
+  else
+    echo -e "${RED}[*] IP Input is Wrong; Try Correct Flag --asn / --cidr $ip${NC}"
   fi
+  
 }
 
 function runcidrscan(){
   echo -e "CIDR/ASN Module $casn"
   echo -e "${MAGENTA}[*] CIDR/ASN Scan is Running on $cidr $asn $casn${NC}"
+  casndir=$(echo $casn | tr / _)
+  results="$results/$casndir"
   declared_paths
   declare
   nmapdiscovery $casn
