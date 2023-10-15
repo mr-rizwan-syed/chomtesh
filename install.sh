@@ -22,6 +22,9 @@ dependency_installer(){
     if ! check_exist pv; then
         apt-get install -y pv &>/dev/null
     fi
+    if ! check_exist ipcalc; then
+        apt-get install -y ipcalc &>/dev/null
+    fi
     if ! check_exist go; then
         echo "${YELLOW}[*] Installing go ${NC}"
         ./goinstaller.sh
@@ -235,7 +238,7 @@ dependency_installer(){
     check_exist "./MISC/technologies.json" || wget -q https://raw.githubusercontent.com/rverton/webanalyze/master/technologies.json -P ./MISC/
     check_exist "$HOME/.gf/excludeExt.json" || cp ./MISC/excludeExt.json "$HOME/.gf/"
 }
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
 required_directories=(
     "./MISC/LinkFinder"
     "./MISC/SecretFinder"
