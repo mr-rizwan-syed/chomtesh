@@ -285,7 +285,7 @@ function rundomainscan(){
 
 function runipscan(){
   ip_pattern='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
-  if [[ $ip =~ $ip_pattern ]] && [[ $ip != *"\/"* ]] && [[ $ip != *"AS"* ]]; then
+  if [[ $ip =~ $ip_pattern ]] && [[ $ip != *"\/"* ]] && [[ $ip != *"AS"* ]] || [[ -f $ip ]]; then
     echo -e "IP Module $ip $ipscan"
     echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
     results="$results/$ip"
