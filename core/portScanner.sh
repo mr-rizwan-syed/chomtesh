@@ -25,7 +25,7 @@ function portscanner(){
         echo -e ""
         echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
         [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -list $portscannerin $naabu_flags -j -o $naabuout.json" ${NC}
-        [[ ! -e $naabuout || $rerun == true ]] && naabu -list $portscannerin $naabu_flags -j -o $naabuout.json 2>/dev/null| pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
+        [[ ! -e $naabuout.json || $rerun == true ]] && naabu -list $portscannerin $naabu_flags -j -o $naabuout.json 2>/dev/null| pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
         [[ ! -e $aliveip || $rerun == true ]] && cat  $naabuout.json | jq -r '"\(.ip)"' | anew $aliveip -q &>/dev/null 2>&1
         [[ ! -e $ipport || $rerun == true ]] && cat  $naabuout.json | jq -r '"\(.ip):\(.port)"' | anew $ipport -q &>/dev/null
 	[[ ! -e $naabuout.csv || $rerun == true ]] && python3 ./core/naabu_json2csv.py $naabuout.json $naabuout.csv &>/dev/null
@@ -33,7 +33,7 @@ function portscanner(){
     else
         echo -e ${YELLOW}"[*] Running Quick Port Scan on $portscannerin" ${NC}
         [[ ! -e $naabuout || $rerun == true ]] && echo -e ${BLUE}"[#] naabu -host $portscannerin $naabu_flags -j -o $naabuout.json" ${NC}
-        [[ ! -e $naabuout || $rerun == true ]] && naabu -host $portscannerin $naabu_flags -j -o $naabuout.json 2>/dev/null| pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
+        [[ ! -e $naabuout.json || $rerun == true ]] && naabu -host $portscannerin $naabu_flags -j -o $naabuout.json 2>/dev/null| pv -p -t -e -N "Naabu Port Scan is Ongoing" &>/dev/null 2>&1
         [[ ! -e $aliveip || $rerun == true ]] && cat  $naabuout.json | jq -r '"\(.ip)"'| anew $aliveip -q &>/dev/null
         [[ ! -e $hostport || $rerun == true ]] && cat  $naabuout.json | jq -r '"\(.host):\(.port)"' | anew $hostport -q &>/dev/null
         [[ ! -e $ipport || $rerun == true ]] && cat  $naabuout.json | jq -r '"\(.ip):\(.port)"' | anew $ipport -q &>/dev/null
