@@ -37,14 +37,14 @@ function httpprobing(){
 
   if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]] || [[ ${casnscan} == true ]];then
       echo -e "${YELLOW}[*] Extracting Potential Host URLs${NC}"
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && cat $httpxout | csvgrep -c status_code -r "^(20|30)" | csvcut -c final_url | grep '^http' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && cat $httpxout | csvgrep -c status_code -r "^(20|30)" | csvgrep -c final_url -i -r "^$" | csvcut -c url | grep -v url | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
   fi
   
   if [[ ${domainscan} == true ]];then
       echo -e "${YELLOW}[*] Extracting Potential Subdomain URLs${NC}"
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 ~ /^http/ {print $3}' | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
-      [[ -e $httpxout || $rerun == true ]] && csvcut -c url,status_code,final_url $httpxout 2>/dev/null| awk -F ',' '$2 == "200" || $2 == "302"' | awk -F ',' '$3 == "" {print $1}' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && cat $httpxout | csvgrep -c status_code -r "^(20|30)" | csvcut -c final_url | grep -oE "^https?://[^/]*\.$domain(:[0-9]+)?" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      [[ -e $httpxout || $rerun == true ]] && cat $httpxout | csvgrep -c status_code -r "^(20|30)" | csvgrep -c final_url -i -r "^$" | csvcut -c url | grep -v url | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
   fi
        
   [ -e $potentialsdurls-tmp ] &&  cat $potentialsdurls-tmp | sed 's/\b:80\b//g;s/\b:443\b//g' 2>/dev/null| sort -u| anew -q $potentialsdurls &>/dev/null 2>&1
