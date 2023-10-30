@@ -149,6 +149,7 @@ echo 'SHODAN-API-KEY' > .token
 ### Horizontal Recon - To gather Root / TLD using crt.sh
 Here are some example commands:
 ```
+cp core/crt.sh . && chmod +x crt.sh
 ./crt.sh teslaoutput tesla.com
 ./crt.sh teslaoutput "TESLA, INC."
 ```
