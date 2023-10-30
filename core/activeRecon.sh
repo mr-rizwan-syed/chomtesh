@@ -100,7 +100,7 @@ function active_recon(){
         [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Full-Scan\n${NC}"
         [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt ${NC}"
         [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt
-        [ -s $enumscan/nuclei_pot_autoscan.txt ] && echo -e "Full Nuclei: [$(cat $enumscan/nuclei_full.txt | wc -l)]"
+        [ -s $enumscan/nuclei_full.txt ] && echo -e "Full Nuclei: [$(cat $enumscan/nuclei_full.txt | wc -l)]"
     }
 
 
