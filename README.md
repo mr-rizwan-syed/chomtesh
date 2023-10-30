@@ -34,7 +34,7 @@ CHOMTE.SH has the following features:
 11. JavaScript Reon: Hardcoded credentials / Sensitive Keys / Passwords
 12. Customizable Flags: Tool arguments can be change by modifying flags.conf file 
 
-![chomtesh_MindMap](https://i.imgur.com/zO7MyLd.png)
+![chomtesh_MindMap](https://i.imgur.com/HXDYfGA.png)
 
 ## Installation
 To install CHOMTE.SH, follow these steps:
