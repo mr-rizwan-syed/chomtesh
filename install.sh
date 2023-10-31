@@ -216,7 +216,7 @@ dependency_installer(){
         pip install pyyaml &>/dev/null
         git clone https://github.com/xnl-h4ck3r/waymore.git ./MISC/waymore &>/dev/null
         python3 ./MISC/waymore/setup.py install &>/dev/null
-        apt intall python3-termcolor -y &>/dev/null
+        apt install python3-termcolor -y &>/dev/null
     fi
     if ! check_exist trufflehog; then
         echo "${YELLOW}[*] Installing Trufflehog ${NC}"
