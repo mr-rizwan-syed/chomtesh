@@ -19,20 +19,24 @@ CHOMTE.SH is a versatile framework designed for automating reconnaissance tasks 
 ![chomtesh_usage](https://i.imgur.com/ajBUjdx.png)
 
 ## Major Features
-CHOMTE.SH has the following features:
+Here are some of the key features that make **CHOMTE.SH** a must-have for security professionals:
 
-1. Gather Subdomains using subfinder: This feature allows you to gather subdomains using the subfinder tool.
-2. DNS Subdomain Bruteforcing using dmut: This feature enables DNS subdomain bruteforcing using the dmut tool.
-3. Quick Port Scan using Naabu: This feature allows for quick port scanning using the Naabu tool.
-4. HTTP Probing using projectdiscovery HTTPX: This feature allows for HTTP probing using the projectdiscovery HTTPX tool to generate a CSV file.
-5. Service Enumeration using Nmap: This feature enables service enumeration using Nmap by scanning ports that are only open on the host.
-6. Nmap Report Format: This feature allows you to generate reports in XML, NMAP, CSV, and HTML (raw and styled) formats.
-7. Content Discovery Scan: Find sensitive files exposed in WebApplications
-8. Common Misconfigurations & Vulnerabilities of Infrastructure / WebApplications
-9. Internet Deep Recon: Shodan / Certificate Transperency
-10. Command Transperency: You will able to see commands what is running, where it is saving files...
-11. JavaScript Reon: Hardcoded credentials / Sensitive Keys / Passwords
-12. Customizable Flags: Tool arguments can be change by modifying flags.conf file 
+1. **Subdomain Discovery**: Easily gather subdomains with the help of the robust subfinder tool.
+2. **DNS Subdomain Bruteforcing**: Strengthen your DNS security by performing subdomain bruteforcing with the dmut tool.
+3. **Quick Port Scanning**: Quickly identify potential vulnerabilities by performing port scans using Naabu.
+4. **HTTP Probing**: Generate detailed reports, including techdetect and webanalyze, using projectdiscovery HTTPX.
+5. **Service Enumeration**: Discover open ports and services using Nmap, focusing only on what matters.
+6. **Reporting**: Create comprehensive reports in XML, NMAP, CSV, and HTML formats, allowing you to present your findings effectively.
+7. **Content Discovery**: Identify sensitive files exposed in web applications and rectify potential security flaws.
+8. **Vulnerability Scanning**: Uncover common misconfigurations and vulnerabilities in your infrastructure and web applications.
+9. **Deep Reconnaissance**: Leverage Shodan and Certificate Transparency for thorough internet-wide reconnaissance.
+10. **Command Transparency**: Gain full visibility into executed commands, their locations, and file outputs.
+11. **URL Extraction and Validation**: Collect all URLs, extract JavaScript files, and validate them, including those with unique parameters.
+12. **Nuclei-based Scanning**: Run Nuclei scans based on technologies found in subdomains and perform parameter fuzzing on URLs.
+13. **JavaScript Recon**: Uncover hardcoded credentials, sensitive keys, and passwords in your applications.
+14. **Customization**: Tailor the tool's behavior to your needs by modifying the flags.conf file.
+
+**CHOMTE.SH** is a game-changer for cybersecurity professionals, offering a comprehensive toolkit to secure your digital assets and strengthen your web application defenses. Stay ahead of threats, protect your online presence, and make **CHOMTE.SH** a part of your security arsenal.
 
 ![chomtesh_MindMap](https://i.imgur.com/HXDYfGA.png)
 
