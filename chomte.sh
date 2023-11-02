@@ -240,7 +240,8 @@ function rundomainscan(){
     declare
     #---------------------------------------------------#
     cat "$domain" | anew -q "$results/targets.txt"
-    [ "$nosubdomainscan" != true ] && getsubdomains "$domain" "$results/subdomains.txt"
+    [ "$nosubdomainscan" != true ] && getsubdomains "$results/targets.txt" "$results/subdomains.txt"
+    [ "$nosubdomainscan" != true ] && cat "$domain" | anew -q "$results/subdomains.txt"
     [[ "$dnsbrute" == true && -f "$domain" ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
     httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
