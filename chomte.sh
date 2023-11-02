@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       5.1.3
+#version:       5.1.4
 #==============================================================================
 
 RED=`tput setaf 1`
@@ -241,7 +241,7 @@ function rundomainscan(){
     #---------------------------------------------------#
     cat "$domain" | anew -q "$results/targets.txt"
     [ "$nosubdomainscan" != true ] && getsubdomains "$results/targets.txt" "$results/subdomains.txt"
-    [ "$nosubdomainscan" != true ] && cat "$domain" | anew -q "$results/subdomains.txt"
+    [ "$nosubdomainscan" == true ] && cat "$domain" | anew -q "$results/subdomains.txt"
     [[ "$dnsbrute" == true && -f "$domain" ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
     httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
