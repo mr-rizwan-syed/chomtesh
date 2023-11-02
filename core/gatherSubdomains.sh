@@ -9,8 +9,11 @@ function getsubdomains(){
   domain=$1
   subdomains=$2
 
-  [[ ! -e $subdomains ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags| anew -q $subdomains ${NC}"
-  [[ ! -e $subdomains ]] && subfinder -d $domain $subfinder_flags 2>/dev/null | anew -q $subdomains &>/dev/null 2>&1
+  [[ ! -e $subdomains && ! -f $domain ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags | anew -q $subdomains ${NC}"
+  [[ ! -e $subdomains && ! -f $domain ]] && subfinder -d $domain $subfinder_flags 2>/dev/null | anew -q $subdomains &>/dev/null 2>&1
+
+  [[ ! -e $subdomains && -f $domain ]] && echo -e "${BLUE}[#] subfinder -dL $domain $subfinder_flags | anew -q $subdomains ${NC}"
+  [[ ! -e $subdomains && -f $domain ]] && subfinder -dL $domain $subfinder_flags 2>/dev/null | anew -q $subdomains &>/dev/null 2>&1
   
   [[ -e $subdomains && $rerun == true ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags| anew -q $results/subdomains.tmp ${NC}"
   [[ -e $subdomains && $rerun == true ]] && subfinder -d $domain $subfinder_flags 2>/dev/null| anew -q $results/subdomains.tmp &>/dev/null 2>&1
