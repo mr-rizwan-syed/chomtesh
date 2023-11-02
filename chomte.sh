@@ -202,9 +202,9 @@ function rundomainscan(){
     declared_paths
     declare
     #---------------------------------------------------#
-    getsubdomains "$domain" "$results/subdomains.txt"
+    [ "$nosubdomainscan" != true ] && getsubdomains "$domain" "$results/subdomains.txt"
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
-    [[ $shodan == "true" ]] && shodun "$domain"
+    [[ "$shodan" == true ]] && shodun "$domain"
     httpprobing $subdomains $results/httpxout.csv
     [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv 
     [[ "$takeover" == true ]] && subdomaintakeover
@@ -234,11 +234,13 @@ function rundomainscan(){
   elif [ -n "$domain" ] && [ -f "$domain" ];then
     echo -e "Domain Module $domain $domainscan - List Specified"
     domainlist=true
+    DomainListFolder=$(echo $domain | cut -d . -f 1)
+    results="$results/$DomainListFolder"
     declared_paths
     declare
     #---------------------------------------------------#
-    cat "$domain" | tee "$results/targets.txt" | anew -q "$results/subdomains.txt"
-    [[ "$jsd" == true && -f "$domain" ]] && jsubfinder "$domain" "$results/jsubfinder.txt"
+    cat "$domain" | anew -q "$results/targets.txt"
+    [ "$nosubdomainscan" != true ] && getsubdomains "$domain" "$results/subdomains.txt"
     [[ "$dnsbrute" == true && -f "$domain" ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
     httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
@@ -355,6 +357,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -sd|--singledomain)
       singledomain=true
+      shift
+      ;;
+    -nss|--nosubdomainscan)
+      nosubdomainscan=true
       shift
       ;;
     -sto|--takeover)
