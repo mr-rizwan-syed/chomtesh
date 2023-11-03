@@ -50,6 +50,8 @@ To install CHOMTE.SH, follow these steps:
 5. Run the installation script: `./install.sh`
 6. Run Chomte.sh: `./chomte.sh`
 
+**Note:** ⚠️ Make sure the httpx version is v1.3.0, not the latest.
+
 ## Usage
 To use CHOMTE.SH, run the script with the following flags:
 ```
