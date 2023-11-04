@@ -102,7 +102,7 @@ dependency_installer(){
     if ! check_exist httpx; then
         echo "${YELLOW}[*] Installing httpx ${NC}"
         rm "$(which httpx)" 2>/dev/null
-        go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.3.0 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
+        go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: httpx" >/dev/null
     fi
     if ! check_exist tlsx; then
         echo "${YELLOW}[*] Installing TLSx ${NC}"
