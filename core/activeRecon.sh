@@ -4,22 +4,25 @@
 #author:        mr-rizwan-syed
 #==============================================================================
 
+function techdetect(){
+    # echo $tech $httpxout.json $$results/httpxmerge.csv
+
+    [ -e $results/httpxmerge.csv ] && urls=($(csvcut -c url,tech $results/httpxmerge.csv 2>/dev/null | grep -i $1 | cut -d ',' -f 1))
+    [ -e $httpxout.json ] && urls+=($(cat $httpxout.json | jq -r 'select(.tech // [] | length > 0) | [.url, .tech[]] | @csv' | grep -i $1 | cut -d , -f 1 | tr -d '"'))
+    [ -e $webtech ] && urls+=($(cat $webtech | jq -r '. | [.hostname, .matches[].app_name] | @csv' | grep -i $1 | cut -d , -f 1 | tr -d '"'))
+
+    result=$(printf "%s\n" "${urls[@]}")
+    for url in $result; do
+        echo $url | grep -oE "^https?://[^/]*(:[0-9]+)?"
+    done
+}
+
 function active_recon(){
     
-    techdetect(){
-      [ -e $results/httpxmerge.csv ] && urls=($(csvcut -c url,tech $results/httpxmerge.csv | grep -i $1 | cut -d ',' -f 1))
-      [ -e $results/httpxout.csv ] && urls=($(csvcut -c url,tech $results/httpxout.csv | grep -i $1 | cut -d ',' -f 1))
-      urls+=($(csvcut -c Host,Category,App $webtech | grep -i $1 | cut -d ',' -f 1))
-      result=$(printf "%s\n" "${urls[@]}")
-      for url in $result; do
-          echo $url | grep -oE "^https?://[^/]*(:[0-9]+)?"
-      done
-    }
-
     # techdetect function can be use to run with manual tools; see below examples; altough nuclei has automatic-scan feature now.
     
     wordpress_recon(){
-        techdetect WordPress | anew $enumscan/wordpress_urls.txt -q &>/dev/null 2>&1
+       [[ $(techdetect Wordpress) ]] | anew $enumscan/wordpress_urls.txt -q &>/dev/null 2>&1
         if [ -s $enumscan/wordpress_urls.txt ];then
             echo -e ""
             [ ! -e $enumscan/wordpress_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running Wordpress Recon\n${NC}"
@@ -31,7 +34,7 @@ function active_recon(){
     }
 
     joomla_recon(){
-        techdetect joomla | anew $enumscan/joomla_urls.txt -q &>/dev/null 2>&1
+        [[ $(techdetect Joomla) ]] | anew $enumscan/joomla_urls.txt -q &>/dev/null 2>&1
         if [ -s $enumscan/joomla_urls.txt ];then
             echo -e ""
             [ ! -e $enumscan/joomla_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running Joomla Recon\n${NC}"
@@ -42,7 +45,7 @@ function active_recon(){
     }
 
     drupal_recon(){
-        techdetect Drupal | anew $enumscan/drupal_urls.txt -q &>/dev/null 2>&1
+        [[ $(techdetect Drupal) ]] | anew $enumscan/drupal_urls.txt -q &>/dev/null 2>&1
         if [ -s $enumscan/drupal_urls.txt ];then
             echo -e ""
             [ ! -e $enumscan/drupal_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running Drupal Recon\n${NC}"
@@ -53,7 +56,7 @@ function active_recon(){
     }
 
     jira_recon(){
-        techdetect jira | anew $enumscan/jira_urls.txt -q &>/dev/null 2>&1
+        [[ $(techdetect Jira) ]] | anew $enumscan/jira_urls.txt -q &>/dev/null 2>&1
         if [ -s $enumscan/jira_urls.txt ];then
             echo -e ""
             [ ! -e $enumscan/jira_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running Jira Recon\n${NC}"
@@ -64,7 +67,7 @@ function active_recon(){
     }
 
     jenkins_recon(){
-        techdetect jenkins | anew $enumscan/jenkins_urls.txt -q &>/dev/null 2>&1
+        [[ $(techdetect Jenkins) ]] | anew $enumscan/jenkins_urls.txt -q &>/dev/null 2>&1
         if [ -s $enumscan/jenkins_urls.txt ];then
             echo -e ""
             [ ! -e $enumscan/jenkins_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running Jenkins Recon\n${NC}"
@@ -75,7 +78,7 @@ function active_recon(){
     }
 
     azure_recon(){
-        techdetect azure | anew $enumscan/azure_urls.txt -q &>/dev/null 2>&1
+        [[ $(techdetect Azure) ]] | anew $enumscan/azure_urls.txt -q &>/dev/null 2>&1
         if [ -s $enumscan/azure_urls.txt ];then
             echo -e ""
             [ ! -e $enumscan/azure_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running Azure Recon\n${NC}"
@@ -83,6 +86,17 @@ function active_recon(){
             [ ! -e $enumscan/azure_nuclei_results.txt ] && nuclei -l $enumscan/azure_urls.txt -w ~/nuclei-templates/workflows/azure-workflow.yaml -o $enumscan/azure_nuclei_results.txt
             echo -e "Azure Recon: [$(cat $enumscan/azure_urls.txt | wc -l)]"
         fi
+    }
+
+    S3_recon(){
+        [[ $(techdetect S3) ]] | anew $enumscan/s3_urls.txt -q &>/dev/null 2>&1
+            if [ -s $enumscan/s3_urls.txt ];then
+                echo -e ""
+                [ ! -e $enumscan/s3_nuclei_results.txt ] && echo -e "${YELLOW}[*] Running S3 Recon\n${NC}"
+                [ ! -e $enumscan/s3_nuclei_results.txt ] && echo -e "${BLUE}[*] nuclei -l $enumscan/s3_urls.txt -tags s3 -o $enumscan/s3_nuclei_results.txt\n${NC}" 
+                [ ! -e $enumscan/s3_nuclei_results.txt ] && nuclei -l $enumscan/s3_urls.txt -tags s3 -o $enumscan/s3_nuclei_results.txt
+                echo -e "S3 URLs: [$(cat $enumscan/s3_urls.txt | wc -l)]"
+            fi
     }
     
     # Add your custom function here; Refer above
@@ -110,6 +124,7 @@ function active_recon(){
     jira_recon 2>/dev/null
     jenkins_recon 2>/dev/null
     azure_recon 2>/dev/null
+    S3_recon 2>/dev/null
 
     auto_nuclei  2>/dev/null || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
 
