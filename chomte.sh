@@ -344,6 +344,10 @@ while [[ $# -gt 0 ]]; do
       print_usage
       shift 
       ;;
+    -u|--update)
+      update=true
+      shift
+      ;;
     -p|--project)
       project="$2"
       banner
@@ -449,6 +453,9 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 if [[ ! -n $1 ]]; then
     print_usage
+elif [ $update == true ];then
+	git pull origin main 2>/dev/null
+ 	echo -e ${GREEN}Update Completed${NC}
 fi
 
 var_checker
