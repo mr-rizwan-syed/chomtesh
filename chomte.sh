@@ -86,8 +86,8 @@ function declared_paths(){
   naabuout="$results/naabuout"
   nmapscans="$results/nmapscans"
   aliveip="$results/aliveip.txt"
-  httpxout="$results/httpxout.csv"
-  webtech="$results/webtech.csv"
+  httpxout="$results/httpxout"
+  webtech="$results/webtech.json"
   hostport="$results/hostport.txt"
   ipport="$results/ipport.txt"
   urlprobed="$results/urlprobed.txt"
@@ -205,12 +205,11 @@ function rundomainscan(){
     [ "$nosubdomainscan" != true ] && getsubdomains "$domain" "$results/subdomains.txt"
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ "$shodan" == true ]] && shodun "$domain"
-    httpprobing $subdomains $results/httpxout.csv
-    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout.csv 
+    httpprobing $subdomains $results/httpxout
+    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp $results/httpxout
     [[ "$takeover" == true ]] && subdomaintakeover
-    [[ -s $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout.csv" 
-    [[ ! -e $results/newsubdomains.tmp ]] && httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
-    
+    [[ -s $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$results/httpxout" 
+    [[ ! -e $results/newsubdomains.tmp ]] && httpprobing "$results/subdomains.txt" "$results/httpxout"
     if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
       echo -e "${YELLOW}[*] Probing HTTP web services in ports other than 80 & 443${NC}"
       dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
@@ -218,11 +217,10 @@ function rundomainscan(){
       [[ -e $dnsxresolved && -e $naabuout.csv ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
-      [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2.csv" 
+      [[ -s $hostport-tmp ]] && httpprobing "$hostport-tmp" "$results/httpxout2" 
       [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
       [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
-    
     if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
         [[ $reconurl == true || "$all" == true ]] && recon_url
@@ -244,7 +242,7 @@ function rundomainscan(){
     [ "$nosubdomainscan" == true ] && cat "$domain" | anew -q "$results/subdomains.txt"
     [[ "$dnsbrute" == true && -f "$domain" ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
-    httpprobing "$results/subdomains.txt" "$results/httpxout.csv"
+    httpprobing "$results/subdomains.txt" "$results/httpxout"
     
     [ ! -e $hostport ] && csvcut -c host,port $naabuout.csv 2>/dev/null | tr ',' ':' | grep -v 'host:port' | anew $hostport -q &>/dev/null
     
@@ -254,7 +252,7 @@ function rundomainscan(){
       [[ -e $dnsxresolved && -e $naabuout.csv ]] && portmapper
       cat $hostport | grep -v ":80\|:443" | anew -q $hostport-tmp
       echo -e "${MAGENTA}Http Probing excluding port 80 & 443${NC}"
-      httpprobing "$hostport-tmp" "$results/httpxout2.csv"
+      httpprobing "$hostport-tmp" "$results/httpxout2"
       [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
       [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
@@ -273,7 +271,7 @@ function rundomainscan(){
     declared_paths
     declare
     portscanner "$domain" $naabuout
-    httpprobing "$hostport" "$results/httpxout.csv"
+    httpprobing "$hostport" "$results/httpxout"
     [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
 
     if [[ $enum == true || "$all" == true ]]; then
@@ -295,7 +293,7 @@ function runipscan(){
     declared_paths
     declare
     portscanner "$ip" $naabuout
-    httpprobing "$ipport" "$results/httpxout.csv"
+    httpprobing "$ipport" "$results/httpxout"
     [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
       if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
@@ -329,7 +327,7 @@ function runhostportscan(){
   if [ -n "${hostportlist}" ];then
     declared_paths
     declare
-    httpprobing "$hostportlist" "$results/httpxout.csv"
+    httpprobing "$hostportlist" "$results/httpxout"
     [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
     if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
@@ -431,6 +429,10 @@ while [[ $# -gt 0 ]]; do
     -n|--nmap)
       nmap=true
       shift 
+      ;;
+    -td|--techdetect)
+      tech="$2"
+      techdetect=true
       ;;
     -*|--*)
       echo "Unknown option $1"
