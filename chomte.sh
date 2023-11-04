@@ -1,6 +1,6 @@
 #!/bin/bash
 #title: CHOMTE.SH
-#description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
+#description:   Automated and Modular Shell Script to Gather Attack Surface & Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
 #version:       5.1.4
 #==============================================================================
