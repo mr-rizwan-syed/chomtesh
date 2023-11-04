@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Shell Script to Gather Attack Surface & Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       5.1.4
+#version:       5.1.5
 #==============================================================================
 
 RED=`tput setaf 1`
@@ -451,11 +451,11 @@ done
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
-if [[ ! -n $1 ]]; then
-    print_usage
-elif [ $update == true ];then
+if [[ $update == true ]];then
 	git pull origin main 2>/dev/null
- 	echo -e ${GREEN}Update Completed${NC}
+ 	echo -e ${GREEN}Update Completed${NC} && exit 0
+elif [[ -z $1 ]]; then
+    print_usage
 fi
 
 var_checker
