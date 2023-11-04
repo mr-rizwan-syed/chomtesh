@@ -140,7 +140,8 @@ Here are some example commands:
 | Input List of domains in scope | ./chomte.sh -p projectname -d Domains-list.txt |
 | Single Domain for in scope engagements | ./chomte.sh -p projectname -d target.com -sd |
 | Single IP Scan | ./chomte.sh -p projectname -i 127.0.0.1 |
-| CIDR / Subnet Scan | ./chomte.sh -p projectname -i 192.168.10.0/24 |
+| CIDR / Subnet Scan | ./chomte.sh -p projectname --cidr 192.168.10.0/24 |
+| ASN Scan | ./chomte.sh -p projectname --asn AS394363 |
 | Perform Nmap scan on open ports | ./chomte.sh -p projectname -i IPs-list.txt -n |
 | Perform host:port http probing & enum | ./chomte.sh -p projectname -hpl hostportlist.txt -e -cd |
 
