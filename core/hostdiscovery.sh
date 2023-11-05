@@ -96,7 +96,7 @@ nmapdiscovery(){
         asnmap -a $casn -silent | anew -q $results/asnip.txt
         echo -e "${BLUE}[#] whois -h whois.radb.net -- \"-i origin $casn\" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo '([0-9.]+){4}/[0-9]+' | anew -q $results/asnip.txt${NC}"
         whois -h whois.radb.net -- "-i origin $casn" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo "([0-9.]+){4}/[0-9]+"| anew -q $results/asnip.txt
-        [ -e "$results/asnip.txt" ] && ${MAGENTA}cat $results/asnip.txt ${NC}
+        [ -e "$results/asnip.txt" ] && cat $results/asnip.txt
         [ -e "$results/asnip.txt" ] && cat $results/asnip.txt | while IFS= read -r cidr; do hostdiscovery $cidr; done
         if [ -e "$results/asnip.txt" ]; then
           while IFS= read -r cidr; do
