@@ -87,7 +87,7 @@ nmapdiscovery(){
     # Check if it's a valid CIDR
     if is_cidr "$casn"; then
         echo "CIDR notation: $casn"
-        [[ -s $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
+        [[ ! -e $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
     fi
     # Check if it's a valid ASN
     if is_asn "$casn"; then
@@ -100,7 +100,7 @@ nmapdiscovery(){
         [ -e "$results/asnip.txt" ] && cat $results/asnip.txt | while IFS= read -r cidr; do hostdiscovery $cidr; done
         if [ -e "$results/asnip.txt" ]; then
           while IFS= read -r cidr; do
-            [[ -s $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
+            [[ ! -e $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
           done < "$results/asnip.txt"
         fi
     fi
