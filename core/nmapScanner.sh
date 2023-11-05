@@ -12,7 +12,7 @@ nmapscans=$2
 [ ! -e $aliveip ] && cat $ipportin | cut -d : -f 1 | sort -u | grep -v ip | anew -q $aliveip
 
 scanner(){
-  ports=$(cat $ipport| grep $iphost | cut -d ':' -f 2 | xargs | sed -e 's/ /,/g')
+  ports=$(cat $ipport| grep $iphost | cut -d ':' -f 2 | sort -u xargs | sed -e 's/ /,/g')
     if [ -z "$ports" ]
     then
         echo -e "No Ports found for $iphost"
