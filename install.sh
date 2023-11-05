@@ -46,6 +46,10 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing python3-pip ${NC}"
         apt install python3-pip -y > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: python3-pip" >/dev/null
     fi
+    if ! check_exist whois; then
+        echo "${YELLOW}[*] Installing whois ${NC}"
+        apt install whois -y > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: Whois" >/dev/null
+    fi
     if ! check_exist git; then
         echo "${YELLOW}[*] Installing git ${NC}"
         apt install git -y 2>/dev/null | pv -p -t -e -N "Installing Tool: git" >/dev/null
