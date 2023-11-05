@@ -87,7 +87,7 @@ nmapdiscovery(){
     # Check if it's a valid CIDR
     if is_cidr "$casn"; then
         echo "CIDR notation: $casn"
-        hostdiscovery $casn
+        [[ -s $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
     fi
     # Check if it's a valid ASN
     if is_asn "$casn"; then
@@ -98,5 +98,10 @@ nmapdiscovery(){
         whois -h whois.radb.net -- "-i origin $casn" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo "([0-9.]+){4}/[0-9]+"| anew -q $results/asnip.txt
         [ -e "$results/asnip.txt" ] && ${MAGENTA}cat $results/asnip.txt ${NC}
         [ -e "$results/asnip.txt" ] && cat $results/asnip.txt | while IFS= read -r cidr; do hostdiscovery $cidr; done
+        if [ -e "$results/asnip.txt" ]; then
+          while IFS= read -r cidr; do
+            [[ -s $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
+          done < "$results/asnip.txt"
+        fi
     fi
 }   
