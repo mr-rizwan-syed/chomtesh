@@ -314,12 +314,16 @@ function runcidrscan(){
   if [ -f "$casn" ]; then
 	  while IFS= read -r cidrrange && is_cidr "$cidrrange"; do
 	    echo "CIDR notation: $cidrrange"
+     	    declared_paths
+            declare
      	    casndir=$(echo $cidrrange | tr / _)
-     	    results="$results/$casndir"	
+     	    results="$results/$casndir"
 	    [[ ! -e "$results/aliveip.txt" || $rerun == true ]] && hostdiscovery "$cidrrange"
 	  done < "$casn"
   elif [ ! -f "$casn" ]; then
-  	  casndir=$(echo $casn | tr / _)
+  	  declared_paths
+          declare
+     	  casndir=$(echo $casn | tr / _)
   	  results="$results/$casndir"
   	  hostdiscovery "$casn"
   fi
