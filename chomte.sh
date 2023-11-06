@@ -313,8 +313,8 @@ function runcidrscan(){
   declared_paths
   declare
   nmapdiscovery $casn
-  portscanner "$aliveip" "$results/naabuout.csv"
-  httpprobing "$ipport" "$results/httpxout.csv"
+  portscanner "$aliveip" "$results/naabuout"
+  httpprobing "$ipport" "$results/httpxout"
   [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
   if [[ $enum == true || "$all" == true ]]; then
       [[ -e $httpxout || "$all" == true ]] && active_recon
