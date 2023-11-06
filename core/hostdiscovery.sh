@@ -65,7 +65,7 @@ hostdiscovery() {
 
     is_private_ip "$(cat "$input_file")"
     
-    if [ "$is_private" -eq 1 ]; then
+    if [[ "$is_private" -eq 1 ]]; then
         echo -e "${BLUEBG}4. Nmap ARP Ping Scan $1 ${NC}"
         nmap -sn -PR -iL "$input_file" -oG "$results/hostdiscovery4.gnmap" &>/dev/null
         [ -e "$results/hostdiscovery4.gnmap" ] && cat "$results/hostdiscovery4.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
