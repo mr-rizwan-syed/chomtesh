@@ -308,11 +308,21 @@ function runipscan(){
 function runcidrscan(){
   echo -e "CIDR/ASN Module $casn"
   echo -e "${MAGENTA}[*] CIDR/ASN Scan is Running on $cidr $asn $casn${NC}"
-  casndir=$(echo $casn | tr / _)
-  results="$results/$casndir"
+
   declared_paths
   declare
-  nmapdiscovery $casn
+  if [ -f "$casn" ]; then
+	  while IFS= read -r cidrrange && is_cidr "$cidrrange"; do
+	    echo "CIDR notation: $cidrrange"
+     	    results="$results/$casndir"
+  	    hostdiscovery "$casn"	
+	    [[ ! -e "$results/aliveip.txt" || $rerun == true ]] && hostdiscovery "$cidrrange"
+	  done < "$casn"
+  elif [ ! -f "$casn" ]; then
+  	  casndir=$(echo $casn | tr / _)
+  	  results="$results/$casndir"
+  	  hostdiscovery "$casn"
+  fi
   portscanner "$aliveip" "$results/naabuout"
   httpprobing "$ipport" "$results/httpxout"
   [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
