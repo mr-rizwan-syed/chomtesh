@@ -328,7 +328,7 @@ function runhostportscan(){
     declared_paths
     declare
     httpprobing "$hostportlist" "$results/httpxout"
-    [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
+    [[ $nmap == "true" ]] && nmapscanner "$hostportlist" "$nmapscans" 
     if [[ $enum == true || "$all" == true ]]; then
         [[ -e $httpxout || "$all" == true ]] && active_recon
         [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
