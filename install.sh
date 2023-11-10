@@ -203,7 +203,7 @@ dependency_installer(){
     if ! check_exist ccze; then
         echo "${YELLOW}[*] Installing CCZE ${NC}"
         #apt install ccze -y 2>/dev/null  | pv -p -t -e -N "Installing Tool: ccze" &>/dev/null
-        cp ./MISC/ccze /usr/local/bin/
+        cp ./MISC/ccze /usr/local/bin/ && chmod +x /usr/local/bin/ccze
     fi
     if ! check_exist ./MISC/LinkFinder; then
         git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder &>/dev/null
