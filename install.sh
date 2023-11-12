@@ -154,6 +154,7 @@ dependency_installer(){
     if ! check_exist dmut; then
         echo "${YELLOW}[*] Installing dmut ${NC}"
         go install github.com/bp0lr/dmut@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: dmut" >/dev/null
+        dmut --update-files &>/dev/null
     fi
     if ! check_exist nuclei; then
         echo "${YELLOW}[*] Installing nuclei ${NC}"
