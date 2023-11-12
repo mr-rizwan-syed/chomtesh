@@ -25,8 +25,15 @@ full_nuclei(){
     [ -s $enumscan/nuclei_full.txt ] && echo -e ${BOLD}${GREEN}"Full Nuclei: [$(cat $enumscan/nuclei_full.txt | wc -l)] [$enumscan/nuclei_full.txt]"${NC}
 }
 
+xss(){
+    [[ ! -e $enumscan/xss_reults.txt || $rerun == true ]] && echo -e ${YELLOW}"[*] Initiating XSS Scan"${NC}
+    [[ ! -e $enumscan/xss_reults.txt || $rerun == true ]] && echo -e ${BLUE}"[#] cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_reults.txt"${NC}
+    [[ ! -e $enumscan/xss_reults.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_reults.txt
+}
+
 function enumVuln(){
     [[ -s $enumscan/URLs/paramurl.txt && "$vuln" == true || $nucleifuzz == true || "$all" == true ]] && nuclei_fuzzer
     [[ "$vuln" == true ]] &&  auto_nuclei  2>/dev/null || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
     [[ "$all" == true ]] && full_nuclei  2>/dev/null|| echo -e "${BLUE}[*] Nuclei Full Scan on $urlprobed >> ${NC}$enumscan/nuclei_full.txt"
+    [[ "$all" == true ]] && xss 2>/dev/null|| echo -e "${BLUE}[*] XSS Scan on $enumscan/URLs/paramurl.txt >> ${NC}$enumscan/xss_reults.txt"
 }
