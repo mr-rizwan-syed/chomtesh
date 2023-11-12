@@ -99,24 +99,7 @@ function active_recon(){
             fi
     }
     
-    # Add your custom function here; Refer above
-
-    auto_nuclei(){
-        echo -e ""
-        [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
-        [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -as -silent | anew $enumscan/nuclei_pot_autoscan.txt ${NC}"
-        [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -as -silent | anew $enumscan/nuclei_pot_autoscan.txt
-        [ -s $enumscan/nuclei_pot_autoscan.txt ] && echo -e "Auto Nuclei: [$(cat $enumscan/nuclei_pot_autoscan.txt | wc -l)]"
-    }
-
-    full_nuclei(){
-        echo -e ""
-        [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Full-Scan\n${NC}"
-        [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt ${NC}"
-        [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt
-        [ -s $enumscan/nuclei_full.txt ] && echo -e "Full Nuclei: [$(cat $enumscan/nuclei_full.txt | wc -l)]"
-    }
-
+    
 
     wordpress_recon 2>/dev/null
     joomla_recon 2>/dev/null
@@ -126,9 +109,7 @@ function active_recon(){
     azure_recon 2>/dev/null
     S3_recon 2>/dev/null
 
-    auto_nuclei  2>/dev/null || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
-
-    [[ "$all" == true || $rerun == true ]] && full_nuclei  2>/dev/null|| echo -e "${BLUE}[*] Nuclei Full Scan on $urlprobed >> ${NC}$enumscan/nuclei_full.txt"
+   
 
  
 }

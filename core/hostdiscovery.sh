@@ -79,7 +79,7 @@ hostdiscovery() {
         [ -e "$results/hostdiscovery6.gnmap" ] && cat "$results/hostdiscovery6.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
     fi
 
-    rm "$results/hostdiscovery*.gnmap"
+    rm $results/hostdiscovery*.gnmap &>/dev/null
 
     # Remove the temporary input file if it was created
     if [ -f "$1" ]; then

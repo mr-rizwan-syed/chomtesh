@@ -5,7 +5,7 @@
 #==============================================================================
 
 function getsubdomains(){
-  echo -e "${YELLOW}[*] Gathering Subdomains: $domain${NC}"
+  [[ ! -e $subdomains && ! -f $domain ]] && echo -e "${YELLOW}${BOLD}[*] Gathering Subdomains: $domain${NC}"
   domain=$1
   subdomains=$2
 
@@ -26,5 +26,5 @@ function getsubdomains(){
   [[ -e $results/subdomains.tmp ]] && rm $results/subdomains.tmp
 
   sdc=$(<$subdomains wc -l)
-  echo -e "${GREEN}${BOLD}[$] Subdomains Collected ${NC}[$sdc] [$subdomains]"
+  echo -e "${GREEN}${BOLD}[$] Total Subdomains Collected ${NC}[$sdc] [$subdomains]"
 }

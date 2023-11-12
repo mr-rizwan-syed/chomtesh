@@ -18,6 +18,8 @@ function portmapper(){
             fi
         done < $dnsxresolved
     }
-    echo -e ${YELLOW}"[*] Mapping Ports to Subdomains${NC} $dnsprobe $naabuout.csv" 
+    [[ ! -e $hostport || $rerun == true ]] && echo -e ${YELLOW}"[*] Mapping Ports to Subdomains${NC} $dnsprobe $naabuout.csv" 
     mapper
+    hostportcount=$(<$hostport wc -l)
+    echo -e "${GREEN}${BOLD}[$] Host Port Count ${NC}[$hostportcount] [$hostport]"
 }
