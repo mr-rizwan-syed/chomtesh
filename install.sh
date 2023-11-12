@@ -58,6 +58,10 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing jq ${NC}"
         apt install jq -y 2>/dev/null | pv -p -t -e -N "Installing Tool: jq" >/dev/null
     fi
+    if ! check_exist dalfox; then
+        echo "${YELLOW}[*] Installing dalfox ${NC}"
+        go install github.com/hahwul/dalfox/v2@latest > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: dalfox" >/dev/null
+    fi
     if ! check_exist lolcat; then
         echo "${YELLOW}[*] Installing lolcat ${NC}"
         apt install lolcat -y 2>/dev/null | pv -p -t -e -N "Installing Tool: lolcat" >/dev/null
@@ -243,7 +247,7 @@ dependency_installer(){
     check_exist "./MISC/technologies.json" || wget -q https://raw.githubusercontent.com/rverton/webanalyze/master/technologies.json -P ./MISC/
     check_exist "$HOME/.gf/excludeExt.json" || cp ./MISC/excludeExt.json "$HOME/.gf/"
 }
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx" "dalfox")
 required_directories=(
     "./MISC/LinkFinder"
     "./MISC/SecretFinder"
