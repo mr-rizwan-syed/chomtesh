@@ -32,6 +32,9 @@ function httpprobing(){
   
 
   if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]] || [[ ${casnscan} == true ]];then
+      cat $results/httpx*.json | jq -r '.url' 2>/dev/null | anew -q $urlprobed
+      urlpc=$(<$urlprobed wc -l)
+      echo -e "${GREEN}[$] Total Subdomain URL Probed ${NC}[$urlpc] [$urlprobed]"
       [[ ! -e $potentialsdurls || $rerun == true ]] && echo -e "${YELLOW}[*] Extracting Potential Host URLs${NC}"
       [[ -e $httpxout.json || $rerun == true ]] && cat $httpxout.json | jq -r 'select(.status_code | tostring | test("^(20|30)")) | .final_url' | grep -v null | grep '^http' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
       [[ -e $httpxout.json || $rerun == true ]] && cat $httpxout.json | jq -r 'select(.status_code | tostring | test("^(20|30)")) | select(.final_url == null) | .url' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
