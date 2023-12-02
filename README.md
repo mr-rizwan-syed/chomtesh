@@ -151,12 +151,12 @@ Shodan Recon Setup
 cd chomtesh
 echo 'SHODAN-API-KEY' > .token
 ```
-### Horizontal Recon - To gather Root / TLD using crt.sh
+### Horizontal Recon - To gather Root / TLD using cert-knock.sh
 Here are some example commands:
 ```
-cp core/crt.sh . && chmod +x crt.sh
-./crt.sh teslaoutput tesla.com
-./crt.sh teslaoutput "TESLA, INC."
+cp core/cert-knock.sh . && chmod +x cert-knock.sh
+./cert-knock.sh teslaoutput tesla.com
+./cert-knock.sh teslaoutput "TESLA, INC."
 ```
 ![chomtesh_crtsh](https://i.imgur.com/lVpNY6L.png)
 ![chomtesh_org](https://i.imgur.com/E5CO0Y4.png)
