@@ -20,7 +20,7 @@ goinstaller(){
   	[ ! -d "/usr/local/go" ] && tar -C /usr/local/ -xzf /tmp/$golatest
 	rm /tmp/$golatest
 	echo $shellrc
-        echo 'export GOPATH=/root/go-workspace' >> $shellrc
+        echo 'export GOPATH=$HOME/go-workspace' >> $shellrc
         echo 'export GOROOT=/usr/local/go' >> $shellrc
         echo 'PATH=$PATH:$GOROOT/bin/:$GOPATH/bin' >> $shellrc
 	exec $SHELL
