@@ -17,9 +17,20 @@ with open(args.output_file, 'w', newline='') as csv_file:
     csv_writer = csv.writer(csv_file)
 
     # Write the CSV header based on your desired fields
-    csv_writer.writerow(['ip', 'port', 'protocol', 'tls', 'timestamp'])
+    csv_writer.writerow(['host', 'ip', 'port', 'protocol', 'tls', 'cdn', 'cdn-name', 'timestamp'])
 
     # Iterate over each JSON object in the file
     for line in data:
         item = json.loads(line)
-        csv_writer.writerow([item['ip'], item['port'], item['protocol'], item['tls'], item['timestamp']])
+        
+        # Check for the existence of 'host' key and provide a default value if missing
+        host = item.get('host', '')
+
+        # Check for the existence of 'cdn' key and provide a default value if missing
+        cdn = item.get('cdn', False)
+        
+        # Check for the existence of 'cdn-name' key and provide a default value if missing
+        cdn_name = item.get('cdn-name', '')
+        
+        # Write the CSV row
+        csv_writer.writerow([host, item['ip'], item['port'], item['protocol'], item['tls'], cdn, cdn_name, item['timestamp']])

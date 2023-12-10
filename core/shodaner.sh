@@ -8,28 +8,28 @@
 
 shodunbanner(){
     echo -e '
-███████ ██   ██  ██████  ██████   █████  ███    ██     ███████ ██   ██  ██████  ██████  ██    ██ ███    ██     ██   ██ ███████ ██       █████  
-██      ██   ██ ██    ██ ██   ██ ██   ██ ████   ██     ██      ██   ██ ██    ██ ██   ██ ██    ██ ████   ██     ██  ██  ██      ██      ██   ██ 
-███████ ███████ ██    ██ ██   ██ ███████ ██ ██  ██     ███████ ███████ ██    ██ ██   ██ ██    ██ ██ ██  ██     █████   █████   ██      ███████ 
-     ██ ██   ██ ██    ██ ██   ██ ██   ██ ██  ██ ██          ██ ██   ██ ██    ██ ██   ██ ██    ██ ██  ██ ██     ██  ██  ██      ██      ██   ██ 
-███████ ██   ██  ██████  ██████  ██   ██ ██   ████     ███████ ██   ██  ██████  ██████   ██████  ██   ████     ██   ██ ███████ ███████ ██   ██ 
-                                                                                                                                               
+
+   ▄▄▄▄▄    ▄  █ ████▄ ██▄   ██      ▄          ▄▄▄▄▄    ▄  █ ████▄ ██▄     ▄      ▄       ██▄   ▄█ █    ██   
+  █     ▀▄ █   █ █   █ █  █  █ █      █        █     ▀▄ █   █ █   █ █  █     █      █      █  █  ██ █    █ █  
+▄  ▀▀▀▀▄   ██▀▀█ █   █ █   █ █▄▄█ ██   █     ▄  ▀▀▀▀▄   ██▀▀█ █   █ █   █ █   █ ██   █     █   █ ██ █    █▄▄█ 
+ ▀▄▄▄▄▀    █   █ ▀████ █  █  █  █ █ █  █      ▀▄▄▄▄▀    █   █ ▀████ █  █  █   █ █ █  █     █  █  ▐█ ███▄ █  █ 
+              █        ███▀     █ █  █ █                   █        ███▀  █▄ ▄█ █  █ █     ███▀   ▐     ▀   █ 
+             ▀                 █  █   ██                  ▀                ▀▀▀  █   ██                     █  
+                              ▀                                                                           ▀                                                                                                                                                  
 ' | lolcat -a -d 1
 }
 
-api_check(){
-	
-	cat .token &> /dev/null
-	SUCCESS=$?
-	if [[ $SUCCESS -eq 1 ]]; then
-		printf "\n${redbg} No Premium Shodan API key found, Make sure you store API key in .token ${NC}\n\n"
-		exit 0
-	else
-		if [[ $SUCCESS -eq 0 ]] ; then
-			shodan init $(cat .token) &> /dev/null
-		fi
-	fi
- }
+api_check() {
+    shodan_api_key=$(grep '^shodan_api_key=' flags.conf | awk -F= '{print $2}' | xargs)
+
+    if [ -z "$shodan_api_key" ]; then
+        printf "\n${redbg} No Premium Shodan API key found. Make sure you store the API key in flags.conf file ${NC}\n\n"
+        exit 0
+    else
+        shodan init "$shodan_api_key" &> /dev/null
+    fi
+}
+
 
 dork(){
     shodan stats --facets ssl.cert.fingerprint ssl:"${target}"|grep -Eo "[[:xdigit:]]{40}" | grep -v "^[[:blank:]]*$" | anew -q $shodanresults/fingerprints.txt;sleep 2

@@ -2,7 +2,7 @@
 #title: CHOMTE.SH
 #description:   Automated and Modular Framework to Gather Attack Surface & Security Vulnerability Reconnaisance Scans
 #author:        mr-rizwan-syed | rushikeshhh-patil
-#version:       5.1.9
+#version:       5.2.0
 #==============================================================================
 
 RED=`tput setaf 1`
@@ -36,7 +36,6 @@ source $core/subdomainTKO.sh
 source $core/resolveDNS.sh
 source $core/portScanner.sh
 source $core/nmapScanner.sh
-source $core/mapPorts.sh
 source $core/probeHttp.sh
 source $core/contentDiscovery.sh
 source $core/activeRecon.sh
@@ -202,7 +201,7 @@ function rundomainscan(){
     declared_paths
     declare
     #---------------------------------------------------#
-    [ "$nosubdomainscan" != true ] && getsubdomains "$domain" "$results/subdomains.txt"
+    [[ "$nosubdomainscan" != true ]] && getsubdomains "$domain" "$results/subdomains.txt"
     [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
     [[ "$shodan" == true ]] && shodun "$domain"
     [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp "$httpxout-brute"
@@ -210,20 +209,18 @@ function rundomainscan(){
     [[ -e $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$httpxout-new"
     [[ ! -e $results/newsubdomains.tmp ]] && httpprobing $subdomains $httpxout
     
-    csvstack $httpxout.csv $httpxout-brute.csv $httpxout-portprobe.csv $httpxout-new 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
+    csvstack $httpxout.csv $httpxout-brute.csv $httpxout-new 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
     jq -s add $results/httpx*.json > $results/httpxmerge.json 2>/dev/null
     
     if [[ "$all" == true || "$pp" == true && -f "$httpxout.json" ]]; then
       [[ ! -e $naabuout.json || $rerun == true ]] && echo -e "${YELLOW}[*] Probing HTTP web services excluding ports 80 & 443${NC}"
-      dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
-      portscanner "$results/dnsxresolved.txt" $naabuout
-      [[ -e $dnsxresolved && -e $naabuout.csv ]] && portmapper
+      dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt"
+      portscanner "$results/subdomains.txt" $naabuout
       [[ -e $hostport ]] && cat $hostport | grep -v ":80\|:443" | anew -q $hostport-services
       [[ ! -e $httpxout-portprobe.json ]] && echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
       [[ -s $hostport-services ]] && httpprobing "$hostport-services" "$httpxout-portprobe"
       csvstack $httpxout.csv $httpxout-brute.csv $httpxout-portprobe.csv $httpxout-new 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
       jq -s add $results/httpx*.json > $results/httpxmerge.json 2>/dev/null
-
       
       [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
     fi
@@ -298,7 +295,9 @@ function runipscan(){
   if [[ $ip =~ $ip_pattern ]] && [[ $ip != *"\/"* ]] && [[ $ip != *"AS"* ]] || [[ -f $ip ]]; then
     echo -e "IP Module $ip $ipscan"
     echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
-    results="$results/$ip"
+    [[ $ip =~ $ip_pattern ]] && ipdir=$(echo $ip | tr . _)
+    [[ -f $ip ]] && ipdir=$(basename $ip | tr . _)
+    results="$results/$ipdir"
     declared_paths
     declare
     portscanner "$ip" $naabuout
@@ -354,7 +353,7 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
       print_usage
-      shift 
+      shift
       ;;
     -u|--update)
       update=true

@@ -21,15 +21,13 @@ function httpprobing(){
   httpxout=$2
   
   if [ -f "$hostlist" ]; then
-    [[ ! -e $httpxout || $rerun == true ]] && echo -e "${BLUE}[#] cat $hostlist | httpx -silent |httpx $httpx_flags -csv -csvo utf-8 -o $httpxout -oa ${NC}"
-    [[ ! -e $httpxout || $rerun == true ]] && cat $hostlist | httpx -silent | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa 2>/dev/null | pv -p -t -e -N "HTTPX Probing is Ongoing"
+    [[ ! -e $httpxout || $rerun == true ]] && echo -e "${BLUE}[#] cat $hostlist |httpx $httpx_flags -csv -csvo utf-8 -o $httpxout -oa ${NC}"
+    [[ ! -e $httpxout || $rerun == true ]] && cat $hostlist | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa 2>/dev/null
     [ -e $httpxout ] && echo -e "${GREEN}[+] HTTP Probe Output:${NC} $httpxout"
   else
-    echo "${BLUE}[#] echo $hostlist | httpx -silent | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa ${NC}"
-    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx -silent | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa 2>/dev/null | pv -p -t -e -N "HTTPX Probing is Ongoing"
+    echo "${BLUE}[#] echo $hostlist | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa ${NC}"
+    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa 2>/dev/null
   fi
-
-  
 
   if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]] || [[ ${casnscan} == true ]];then
       cat $results/httpx*.json | jq -r '.url' 2>/dev/null | anew -q $urlprobed

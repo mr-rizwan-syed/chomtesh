@@ -14,6 +14,7 @@ scanner(){
     else
         echo -e ""
         echo -e ${CYAN}"[$] Running Nmap Scan on"${NC} $iphost ======${CYAN} $ports ${NC}
+        echo -e ${BLUE}"[#] nmap $iphost -p $ports $nmap_flags"${NC}
         if [ -n "$(find $nmapscans -maxdepth 1 -name 'nmapresult-$iphost*' -print -quit)" ]; then
           echo -e "${CYAN}Nmap result exists for $iphost, Skipping this host...${NC}"
         else
@@ -25,12 +26,10 @@ scanner(){
 nmapconverter(){
   rm $nmapscans/*.html &>/dev/null
   rm $nmapscans/*.csv &>/dev/null
-  # Convert to csv
-  ls $nmapscans/*.xml | xargs -I {} python3 $PWD/MISC/xml2csv.py -f {} -csv {}.csv &>/dev/null
-  echo -e "${GREEN}[+] All Nmap CSV Generated ${NC}"
-  # Merge all csv
-  [ ! -e $nmapscans/Nmap_Final_Merged.csv ] && csvstack $nmapscans/*.csv > $nmapscans/Nmap_Final_Merged.csv 2>/dev/null
-  echo -e "${GREEN}[+] Merged Nmap CSV Generated ${NC}$nmapscans/Nmap_Final_Merged.csv"
+  # Convert to CSV
+  ls $nmapscans/*.xml | xargs -I {} python3 $PWD/MISC/xml2csv.py -f {} -csv $nmapscans/scans.csv &>/dev/null
+  echo -e "${GREEN}[+] Nmap CSV Generated ${NC}"
+  echo -e "${GREEN}[+] Merged Nmap CSV Generated ${NC}$nmapscans/scans.csv"
   # Generating HTML Report Format
   ls $nmapscans/*.xml | xargs -I {} xsltproc -o {}_nmap.html ./MISC/nmap-bootstrap.xsl {} 2>$nmapscans/error.log
   echo -e "${GREEN}[+] HTML Report Format Generated ${NC}"
@@ -55,6 +54,5 @@ nmapscanner(){
         progress=$(($counter * 100 / $(wc -l < "$aliveip")))
         printf "Progress: [%-50s] %d%%\r" $(head -c $(($progress / 2)) < /dev/zero | tr '\0' '#') $progress
     done <"$aliveip"
-    [ -e "$nmapscans/Nmap_Final_Merged.csv" ] && echo -e "$nmapscans/Nmap_Final_Merged.csv Exist" || nmapconverter
-
+    [ -e "$nmapscans/scans.csv" ] && echo -e "$nmapscans/scans.csv Exist" || nmapconverter
 }
