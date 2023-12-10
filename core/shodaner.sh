@@ -20,13 +20,13 @@ shodunbanner(){
 }
 
 api_check() {
-    shodan_api_key=$(grep '^shodan_api_key=' flags.conf | awk -F= '{print $2}' | xargs)
+    SHODAN_API_KEY=$(grep 'SHODAN_API_KEY: ' config.yml | awk -F'[][]' '{print $2}' | xargs)
 
     if [ -z "$shodan_api_key" ]; then
         printf "\n${redbg} No Premium Shodan API key found. Make sure you store the API key in flags.conf file ${NC}\n\n"
         exit 0
     else
-        shodan init "$shodan_api_key" &> /dev/null
+        shodan init "$SHODAN_API_KEY" &> /dev/null
     fi
 }
 

@@ -124,6 +124,10 @@ recon_url(){
 }
 
 xnl(){
+    WAYMORE_CONFIG_FILE=MISC/waymore/config.yml
+    URLSCAN_API_KEY=$(grep "URLSCAN_API_KEY:" "config.yml" | awk -F'[][]' '{print $2}')
+    sed -i "s/URLSCAN_API_KEY:.*/URLSCAN_API_KEY: $URLSCAN_API_KEY/" "$WAYMORE_CONFIG_FILE"
+
     echo -e "${YELLOW}[*] Runing Waymore on $domain"
     echo -e "${BLUE}[#] python3 ./MISC/waymore/waymore.py -i $domain -mode B -oU $enumscan/URLs/waymore.txt -oR $enumscan/URLs/waymoreResponses/\n${NC}" 
     [ ! -f $enumscan/URLs/waymore.txt ] && python3 ./MISC/waymore/waymore.py -i $domain -mode B -oU $enumscan/URLs/waymore.txt -oR $enumscan/URLs/waymoreResponses/
