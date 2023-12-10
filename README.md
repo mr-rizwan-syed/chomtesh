@@ -134,9 +134,10 @@ Here are some example commands:
 | EnumScan: Content Discovery scan on Potential URLs | ./chomte.sh -p projectname -d example.com -e -cd |
 | EnumScan: URL Recon Function  | ./chomte.sh -p projectname -d example.com -e -ru |
 | EnumScan: Nuclei Fuzzer Template Scan on Potential Parameter URLs | ./chomte.sh -p projectname -d example.com -e -ru -nf |
-| EnumScan: Run all Enum modules | ./chomte.sh -p projectname -d example.com -e -cd -ru -nf |
+| EnumScan: Run all Enum modules | ./chomte.sh -p projectname -d example.com -e -cd -ru -v -nf |
 | EnumScan: XNL JS Recon and do Trufflehog Secret Scan | ./chomte.sh -p projectname -d example.com -e -ex |
 | Perform all applicable Scans | ./chomte.sh -p projectname -d example.com -all |
+| Shodan Scan [API Key Required]| ./chomte.sh -p projectname -d example.com -s |
 | Input List of domains in scope | ./chomte.sh -p projectname -d Domains-list.txt |
 | Single Domain for in scope engagements | ./chomte.sh -p projectname -d target.com -sd |
 | Single IP Scan | ./chomte.sh -p projectname -i 127.0.0.1 |
@@ -145,12 +146,11 @@ Here are some example commands:
 | Perform Nmap scan on open ports | ./chomte.sh -p projectname -i IPs-list.txt -n |
 | Perform host:port http probing & enum | ./chomte.sh -p projectname -hpl hostportlist.txt -e -cd |
 
-### Internet Deep Recon
-Shodan Recon Setup
-```
-cd chomtesh
-echo 'SHODAN-API-KEY' > .token
-```
+### Setup after Installation
+1. Setup Subfinder API Keys `~/.config/subfinder/provider-config.yaml` [Subfinder API Keys](https://github.com/projectdiscovery/subfinder#post-installation-instructions).
+2. Setup API Keys in Chomtesh Config file `chomtesh/config.yml`
+3. Customization `flags.conf`, CHOMTE.SH allows you to customize the tool flags by editing the `flags.conf` file.
+
 ### Horizontal Recon - To gather Root / TLD using cert-knock.sh
 Here are some example commands:
 ```
@@ -162,9 +162,8 @@ cp core/cert-knock.sh . && chmod +x cert-knock.sh
 ![chomtesh_org](https://i.imgur.com/E5CO0Y4.png)
 ![chomtesh_org](https://i.imgur.com/qJKZMOg.png)
 
-## Customization
-- CHOMTE.SH allows you to customize the tool flags by editing the `flags.conf` file.
-- Add API keys to subfinder ~/.config/subfinder/provider-config.yaml [Subfinder API Keys](https://github.com/projectdiscovery/subfinder#post-installation-instructions).
+Read More here: [External Reconnaissance Unveiled: A Deep Dive into Domain Analysis](https://breachforce.net/external-recon-1)
+
 
 ## Contributions
 Contributions and pull requests are highly encouraged for this project.
