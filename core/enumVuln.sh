@@ -29,7 +29,7 @@ full_nuclei(){
 xsscan(){
     [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${YELLOW}"[*] Initiating XSS Scan"${NC}
     [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BLUE}"[#] cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt"${NC}
-    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt
+    #[[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt
     [[ ! -e $enumscan/xss_nuclei_fuzz_results.txt || $rerun == true ]] && echo -e "${BLUE}[#] nuclei -silent -t MISC/fuzzing-templates/xss -list $enumscan/URLs/paramurl.txt"
     [[ ! -e $enumscan/xss_nuclei_fuzz_results.txt || $rerun == true ]] && nuclei -silent -t MISC/fuzzing-templates/xss -list $enumscan/URLs/paramurl.txt 
     [ -s $enumscan/xss_results.txt || $rerun == true ] && echo -e ${BOLD}${GREEN}"XSS Scan Result: [$(cat $enumscan/xss_results.txt | wc -l)] [$enumscan/xss_results.txt]"${NC}
