@@ -1,15 +1,16 @@
 #!/bin/bash
 #title: CHOMTE.SH - enumVuln
-#description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaisance Scans
+#description:   Automated and Modular Shell Script to Automate Security Vulnerability Reconnaissance Scans
 #author:        mr-rizwan-syed
 #==============================================================================
 
+'''
 nuclei_fuzzer(){
     [[ ! -e $enumscan/URLs/nuclei_fuzzing_results.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Fuzzer"
     [[ ! -e $enumscan/URLs/nuclei_fuzzing_results.txt || $rerun == true ]] && echo -e "${BLUE}[#] nuclei -silent -t MISC/fuzzing-templates -list $enumscan/URLs/paramurl.txt | anew $enumscan/URLs/nuclei_fuzzing_results.txt ${NC}" 
     [[ ! -e $enumscan/URLs/nuclei_fuzzing_results.txt || $rerun == true ]] && nuclei -silent -t MISC/fuzzing-templates -list $enumscan/URLs/paramurl.txt | anew $enumscan/URLs/nuclei_fuzzing_results.txt
     [ -s $enumscan/URLs/nuclei_fuzzing_results.txt ] && echo -e ${BOLD}${GREEN}"[+] Fuzz Nuclei: [$(cat $enumscan/URLs/nuclei_fuzzing_results.txt | wc -l)] [$enumscan/URLs/nuclei_fuzzing_results.txt]"${NC}
-}
+}'''
 
 auto_nuclei(){
     [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
@@ -28,8 +29,11 @@ full_nuclei(){
 xsscan(){
     [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${YELLOW}"[*] Initiating XSS Scan"${NC}
     [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BLUE}"[#] cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt"${NC}
-    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_reults.txt
-    [[ -s $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BOLD}${GREEN}"XSS Scan Result: [$(cat $enumscan/xss_reults.txt | wc -l)] [$enumscan/xss_reults.txt]"${NC}
+    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt
+    [[ ! -e $enumscan/xss_nuclei_fuzz_results.txt || $rerun == true ]] && echo -e "${BLUE}[#] nuclei -silent -t MISC/fuzzing-templates/xss -list $enumscan/URLs/paramurl.txt"
+    [[ ! -e $enumscan/xss_nuclei_fuzz_results.txt || $rerun == true ]] && nuclei -silent -t MISC/fuzzing-templates/xss -list $enumscan/URLs/paramurl.txt 
+    [ -s $enumscan/xss_results.txt || $rerun == true ] && echo -e ${BOLD}${GREEN}"XSS Scan Result: [$(cat $enumscan/xss_results.txt | wc -l)] [$enumscan/xss_results.txt]"${NC}
+    [ -s $enumscan/xss_nuclei_fuzz_results.txt || $rerun == true ] && echo -e ${BOLD}${GREEN}"XSS Nuclei Fuzz Scan Result: [$(cat $enumscan/xss_nuclei_fuzz_results.txt | wc -l)] [$enumscan/xss_nuclei_fuzz_results.txt]"${NC}
 }
 
 function enumVuln(){
