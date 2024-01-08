@@ -30,10 +30,6 @@ dependency_installer(){
         ./goinstaller.sh
         echo "${GREEN}[*] Rerun install.sh${NC}"
     fi
-    if ! check_exist pup; then
-        echo "${YELLOW}[*] Installing pup ${NC}"
-        apt install pup -y > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: pup" >/dev/null
-    fi
     if ! check_exist knockknock; then
         echo "${YELLOW}[*] Installing knockknock ${NC}"
         go install github.com/harleo/knockknock@latest > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: knockknock" >/dev/null
@@ -247,7 +243,7 @@ dependency_installer(){
     check_exist "./MISC/technologies.json" || wget -q https://raw.githubusercontent.com/rverton/webanalyze/master/technologies.json -P ./MISC/
     check_exist "$HOME/.gf/excludeExt.json" || cp ./MISC/excludeExt.json "$HOME/.gf/"
 }
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "pup" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx" "dalfox")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx" "dalfox")
 required_directories=(
     "./MISC/LinkFinder"
     "./MISC/SecretFinder"
