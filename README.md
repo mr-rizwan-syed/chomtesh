@@ -151,7 +151,59 @@ Here are some example commands:
 2. Setup API Keys in Chomtesh Config file `chomtesh/config.yml`
 3. Customization `flags.conf`, CHOMTE.SH allows you to customize the tool flags by editing the `flags.conf` file.
 
-### Horizontal Recon - To gather Root / TLD using cert-knock.sh
+
+### Pulling the Docker Image
+
+To pull the `chomtesh` image from Docker Hub, use the following command:
+
+```bash
+docker pull r12w4n/chomtesh
+```
+
+## Usage
+
+
+### Running a Temporary Container (Container will be automatically deleted once the command finishes)
+
+To run `chomtesh` in a container that removes itself after completion:
+
+```bash
+docker run --rm -it r12w4n/chomtesh ./chomte.sh -p vulnweb -d vulnweb.com -a
+```
+
+### Mapping Results to Local Machine
+
+To execute `chomtesh` and map the `Results` directory from the container to your local machine:
+
+```bash
+docker run --rm -it -v "$(pwd)/Results:/app/chomtesh/Results" r12w4n/chomtesh ./chomte.sh -p vulnweb -d vulnweb.com -brt -ax
+```
+
+This command will create a `Results` folder in your current working directory and populate it with the results from the container.
+
+### Using Configuration Files from the Host
+
+If you have configuration files on your host machine that you need to use within the container:
+
+1. **Host File Paths:**
+   - `~/.config/subfinder/provider-config.yaml`
+   - `$(pwd)/config.yml`
+
+2. **Container Mapping Paths:**
+   - `~/.config/subfinder/provider-config.yaml`
+   - `/app/chomtesh/config.yml`
+
+Use the following command to map these files into the container:
+
+```bash
+docker run --rm -it \
+    -v ~/.config/subfinder/provider-config.yaml:~/.config/subfinder/provider-config.yaml \
+    -v $(pwd)/config.yml:/app/chomtesh/config.yml \
+    r12w4n/chomtesh ./chomte.sh -p vulnweb -d vulnweb.com -a
+```
+ 
+
+## Horizontal Recon - To gather Root / TLD using cert-knock.sh
 Here are some example commands:
 ```
 cp core/cert-knock.sh . && chmod +x cert-knock.sh
