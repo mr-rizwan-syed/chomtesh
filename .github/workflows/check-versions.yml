@@ -1,0 +1,31 @@
+name: Check Versions
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run every Sunday at 00:00 UTC
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install jq
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+
+    - name: Check Go Version
+      id: check-go-version
+      run: |
+        GO_LATEST=$(curl -s https://go.dev/VERSION?m=text | head -n 1 | sed 's/^go//')
+        GO_CURRENT=$(grep -oP '(?<=GO_VERSION=)\d+\.\d+\.\d+' Dockerfile)
+        if [ "$GO_LATEST" != "$GO_CURRENT" ]; then
+          echo "Go version $GO_LATEST is available (current: $GO_CURRENT)"
+          echo "result=Go version $GO_LATEST is available (current: $GO_CURRENT)" >> $GITHUB_OUTPUT
+        else
+          echo "Go version $GO_CURRENT is up-to-date"
+          echo "result=Go version $GO_CURRENT is up-to-date" >> $GITHUB_OUTPUT
+        fi
