@@ -1,0 +1,70 @@
+name: Check Versions
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run every Sunday at 00:00 UTC
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install jq
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+
+    - name: Check Go Version
+      id: check-go-version
+      run: |
+        GO_LATEST=$(curl -s https://go.dev/VERSION?m=text | head -n 1 | sed 's/^go//')
+        GO_CURRENT=$(grep -oP '(?<=GO_VERSION=)\d+\.\d+\.\d+' Dockerfile)
+        if [ "$GO_LATEST" != "$GO_CURRENT" ]; then
+          echo "Go version $GO_LATEST is available (current: $GO_CURRENT)"
+          echo "result=Go version $GO_LATEST is available (current: $GO_CURRENT)" >> $GITHUB_OUTPUT
+        else
+          echo "Go version $GO_CURRENT is up-to-date"
+          echo "result=Go version $GO_CURRENT is up-to-date" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check Trufflehog Version
+      id: check-trufflehog-version
+      run: |
+        TRUFFLEHOG_LATEST=$(curl -sSL https://api.github.com/repos/trufflesecurity/trufflehog/releases/latest | jq -r '.tag_name' | sed 's/v//')
+        TRUFFLEHOG_CURRENT=$(grep -oP '(?<=TRUFFLEHOG_VERSION=)\d+\.\d+\.\d+' Dockerfile)
+        if [ "$TRUFFLEHOG_LATEST" != "$TRUFFLEHOG_CURRENT" ]; then
+          echo "Trufflehog version $TRUFFLEHOG_LATEST is available (current: $TRUFFLEHOG_CURRENT)"
+          echo "result=Trufflehog version $TRUFFLEHOG_LATEST is available (current: $TRUFFLEHOG_CURRENT)" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Send Notification
+      if: contains(steps.check-go-version.outputs.result, 'is available') || contains(steps.check-trufflehog-version.outputs.result, 'is available')  # Check for Go and Trufflehog updates
+      run: |
+        ISSUE_TITLE=""  # Initialize empty title
+        ISSUE_BODY=""   # Initialize empty body
+
+        # Check for Go update and add to title/body
+        if [[ "${{ steps.check-go-version.outputs.result }}" == *"available"* ]]; then
+          ISSUE_TITLE+="New version of Go"
+          ISSUE_BODY+="A new version of Go (${{ steps.check-go-version.outputs.result }}) is available. Please update the Dockerfile.\n\n"
+        fi
+        
+        # Check for Trufflehog update and add to title/body
+        if [[ "${{ steps.check-trufflehog-version.outputs.result }}" == *"available"* ]]; then
+          if [[ -n "$ISSUE_TITLE" ]]; then  # Only add "and" if there's already content in title
+            ISSUE_TITLE+=" and "
+          fi
+          ISSUE_TITLE+="New Trufflehog version"
+          ISSUE_BODY+="A new version of Trufflehog (${{ steps.check-trufflehog-version.outputs.result }}) is available. Consider updating the Dockerfile.\n\n"
+        fi
+        
+        # Create issue only if there's content in title and body
+        if [[ -n "$ISSUE_TITLE" && -n "$ISSUE_BODY" ]]; then
+          curl -X POST -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}" \
+               -H "Content-Type: application/json" \
+               -d '{"title":"'"$ISSUE_TITLE"'","body":"'"$ISSUE_BODY"'"}' \
+               https://api.github.com/repos/${{ github.repository }}/issues
+        fi

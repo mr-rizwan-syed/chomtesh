@@ -3,6 +3,10 @@ FROM kalilinux/kali-rolling
 # Set the working directory
 WORKDIR /app
 
+# Set version variables
+ENV GO_VERSION=1.21.5
+ENV TRUFFLEHOG_VERSION=3.63.7
+
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y \
@@ -32,10 +36,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Go
-ENV GOLANG_VERSION 1.21.5
-RUN wget https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go$GOLANG_VERSION.linux-amd64.tar.gz && \
-    rm go$GOLANG_VERSION.linux-amd64.tar.gz
+RUN wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
+    rm go${GO_VERSION}.linux-amd64.tar.gz
 
 # Set Go environment variables
 ENV GOPATH="$HOME/go-workspace"
@@ -83,9 +86,9 @@ RUN git clone https://github.com/codingo/Interlace.git ./MISC/Interlace && \
         pip3 install -r ./MISC/Interlace/requirements.txt && \
         cd ./MISC/Interlace/ && python3 setup.py install && cd -
 
-RUN wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.63.7/trufflehog_3.63.7_linux_amd64.tar.gz -P /tmp/ && \
-        tar -xvf /tmp/trufflehog* -C /usr/local/bin/ && \
-        chmod +x /usr/local/bin/trufflehog*
+RUN wget https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz -P /tmp/ && \
+    tar -xvf /tmp/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/trufflehog
 
 RUN git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder
 RUN pip3 install -r ./MISC/SecretFinder/requirements.txt
