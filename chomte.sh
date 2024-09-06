@@ -216,7 +216,7 @@ function rundomainscan(){
       [[ ! -e $naabuout.json || $rerun == true ]] && echo -e "${YELLOW}[*] Probing HTTP web services excluding ports 80 & 443${NC}"
       dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt"
       portscanner "$results/subdomains.txt" $naabuout
-      [[ -e $hostport ]] && cat $hostport | grep -v ":80\|:443" | anew -q $hostport-services
+      [[ -e $hostport ]] && cat $hostport | grep -vE ':80$|:443$' | anew -q $hostport-services
       [[ ! -e $httpxout-portprobe.json ]] && echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
       [[ -s $hostport-services ]] && httpprobing "$hostport-services" "$httpxout-portprobe"
       csvstack $httpxout.csv $httpxout-brute.csv $httpxout-portprobe.csv $httpxout-new 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
