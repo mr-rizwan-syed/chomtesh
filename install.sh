@@ -54,6 +54,14 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing jq ${NC}"
         apt install jq -y 2>/dev/null | pv -p -t -e -N "Installing Tool: jq" >/dev/null
     fi
+    if ! check_exist tmux; then
+        echo "${YELLOW}[*] Installing TMUX ${NC}"
+        apt install tmux -y 2>/dev/null | pv -p -t -e -N "Installing Tool: TMUX" >/dev/null
+    fi
+    if ! check_exist batcat; then
+        echo "${YELLOW}[*] Installing BatCat ${NC}"
+        apt install bat -y 2>/dev/null | pv -p -t -e -N "Installing Tool: BatCat" >/dev/null
+    fi
     if ! check_exist dalfox; then
         echo "${YELLOW}[*] Installing dalfox ${NC}"
         go install github.com/hahwul/dalfox/v2@latest > /dev/null 2>/dev/null | pv -p -t -e -N "Installing Tool: dalfox" >/dev/null
@@ -116,7 +124,6 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing AlterX ${NC}"
         go install github.com/projectdiscovery/alterx/cmd/alterx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: AlterX"
     fi
-    
     if ! check_exist dnsx; then
         echo "${YELLOW}[*] Installing DNSx ${NC}"
         go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest > /dev/null 2>&1 | pv -p -t -e -N "Installing Tool: DNSx"
@@ -179,19 +186,19 @@ dependency_installer(){
     if ! check_exist interlace; then
         echo "${YELLOW}[*] Installing Interlace ${NC}"
         [ ! -e ./MISC/Interlace/ ] && git clone https://github.com/codingo/Interlace.git ./MISC/Interlace/ 2>/dev/null | pv -p -t -e -N "Installing Tool: Interlace" &>/dev/null
-        [ ! -e ./MISC/Interlace/ ] && pip3 install -r ./MISC/Interlace/requirements.txt > /dev/null 2>&1
+        [ ! -e ./MISC/Interlace/ ] && pip3 install -r ./MISC/Interlace/requirements.txt --break-system-packages > /dev/null 2>&1
         apt install python3-netaddr python3-tqdm -y > /dev/null 2>&1
         cd ./MISC/Interlace/ && python3 setup.py install > /dev/null 2>&1
         cd -
     fi
     if ! check_exist ansi2html; then
         echo "${YELLOW}[*] Installing ansi2html ${NC}"
-        pip3 install ansi2html &>/dev/null
+        pip3 install ansi2html --break-system-packages &>/dev/null
         sudo apt install colorized-logs &>/dev/null
     fi
     if ! check_exist shodan; then
         echo "${YELLOW}[*] Installing Shodan ${NC}"
-        apt install python3-shodan -y &>/dev/null
+        pip3 install shodan --break-system-packages > /dev/null 2>&1
     fi
     if ! check_exist subjs; then
         echo "${YELLOW}[*] Installing Subjs ${NC}"
@@ -201,6 +208,11 @@ dependency_installer(){
         echo "${YELLOW}[*] Installing Katana ${NC}"
         go install github.com/projectdiscovery/katana/cmd/katana@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: katana" &>/dev/null
     fi
+    if ! check_exist uncover; then
+        echo "${YELLOW}[*] Installing Uncover ${NC}"
+        go install -v github.com/projectdiscovery/uncover/cmd/uncover@latest 2>/dev/null | pv -p -t -e -N "Installing Tool: Uncover" &>/dev/null
+    fi
+    
     if ! check_exist ccze; then
         echo "${YELLOW}[*] Installing CCZE ${NC}"
         #apt install ccze -y 2>/dev/null  | pv -p -t -e -N "Installing Tool: ccze" &>/dev/null
@@ -208,17 +220,17 @@ dependency_installer(){
     fi
     if ! check_exist ./MISC/LinkFinder; then
         git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder &>/dev/null
-        pip3 install -r ./MISC/LinkFinder/requirements.txt &>/dev/null
+        pip3 install -r ./MISC/LinkFinder/requirements.txt --break-system-packages &>/dev/null
         python3 ./MISC/LinkFinder/setup.py install &>/dev/null
     fi
     if ! check_exist ./MISC/SecretFinder; then
         echo "${YELLOW}[*] Installing SecretFinder ${NC}"
         git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder &>/dev/null
-        pip3 install -r ./MISC/SecretFinder/requirements.txt &>/dev/null
+        pip3 install -r ./MISC/SecretFinder/requirements.txt --break-system-packages &>/dev/null
     fi
     if ! check_exist ./MISC/waymore; then
         echo "${YELLOW}[*] Installing WayMore ${NC}"
-        pip install pyyaml &>/dev/null
+        pip3 install pyyaml tldextract --break-system-packages &>/dev/null
         git clone https://github.com/xnl-h4ck3r/waymore.git ./MISC/waymore &>/dev/null
         python3 ./MISC/waymore/setup.py install &>/dev/null
         apt install python3-termcolor -y &>/dev/null
@@ -243,7 +255,7 @@ dependency_installer(){
     check_exist "./MISC/technologies.json" || wget -q https://raw.githubusercontent.com/rverton/webanalyze/master/technologies.json -P ./MISC/
     check_exist "$HOME/.gf/excludeExt.json" || cp ./MISC/excludeExt.json "$HOME/.gf/"
 }
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx" "dalfox")
+required_tools=("pv" "go" "python3" "ccze" "uncover" "tmux" "git" "pip" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx" "dalfox")
 required_directories=(
     "./MISC/LinkFinder"
     "./MISC/SecretFinder"
