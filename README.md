@@ -224,3 +224,7 @@ Contributions are what make the open source community such an amazing place to b
 
 ## Acknowledgement
 The CHOMTESH project was made possible by community contributions. We acknowledge and thank all the contributors who have made this project what it is.
+1. Rizwan Syed
+2. Rushikesh Patil
+3. Ashutosh Barot
+4. Kaustubh Rai
