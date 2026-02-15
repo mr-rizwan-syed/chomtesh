@@ -109,6 +109,14 @@ nmapdiscovery(){
         local cidr_count=$(wc -l < "$results/asnip.txt" 2>/dev/null || echo 0)
         ui_print_result_item "CIDRs Found" "$results/asnip.txt" "$cidr_count"
         ui_step_end
+
+        # Add-on: PTR Fingerprinting
+        ui_step_start "ASN PTR Fingerprinting" "nuclei -id ptr-fingerprint"
+        echo "$casn" | nuclei -id ptr-fingerprint -silent | anew "$results/ptr_findings.txt"
+        
+        local ptr_count=$(wc -l < "$results/ptr_findings.txt" 2>/dev/null || echo 0)
+        ui_print_result_item "PTR Findings" "$results/ptr_findings.txt" "$ptr_count"
+        ui_step_end
         
         # Scan found CIDRs
         if [ -e "$results/asnip.txt" ]; then

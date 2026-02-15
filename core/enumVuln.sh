@@ -5,36 +5,117 @@
 #==============================================================================
 
 nuclei_fuzzer(){
-    [[ ! -e $enumscan/URLs/nuclei_fuzzing_results.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Fuzzer"
-    [[ ! -e $enumscan/URLs/nuclei_fuzzing_results.txt || $rerun == true ]] && echo -e "${BLUE}[#] nuclei -silent -t MISC/fuzzing-templates -list $enumscan/URLs/paramurl.txt | anew $enumscan/URLs/nuclei_fuzzing_results.txt ${NC}" 
-    [[ ! -e $enumscan/URLs/nuclei_fuzzing_results.txt || $rerun == true ]] && nuclei -silent -t MISC/fuzzing-templates -list $enumscan/URLs/paramurl.txt | anew $enumscan/URLs/nuclei_fuzzing_results.txt
-    [ -s $enumscan/URLs/nuclei_fuzzing_results.txt ] && echo -e ${BOLD}${GREEN}"[+] Fuzz Nuclei: [$(cat $enumscan/URLs/nuclei_fuzzing_results.txt | wc -l)] [$enumscan/URLs/nuclei_fuzzing_results.txt]"${NC}
+    local input_file="$enumscan/URLs/paramurl.txt"
+    local output_file="$enumscan/URLs/nuclei_fuzzing_results.txt"
+    
+    if [ ! -s "$input_file" ]; then
+        ui_print_warning "Skipping Nuclei Fuzzer: $input_file is empty or missing."
+        return 1
+    fi
+
+    if [[ ! -e "$output_file" || "$rerun" == true ]]; then
+        ui_step_start "Nuclei DAST (Fuzzing)" "nuclei -silent -dast -list $input_file"
+        nuclei -silent -dast -list "$input_file" | anew "$output_file"
+        ui_step_end
+    fi
+
+    if [ -s "$output_file" ]; then
+        local count=$(wc -l < "$output_file")
+        ui_step_start "Nuclei Fuzzer Results" ""
+        ui_print_result_item "Fuzzing Findings" "$output_file" "$count"
+        ui_step_end
+    fi
 }
 
 auto_nuclei(){
-    [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Automatic-Scan\n${NC}"
-    [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -as -silent | anew $enumscan/nuclei_pot_autoscan.txt ${NC}"
-    [[ ! -e $enumscan/nuclei_pot_autoscan.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -as -silent | anew $enumscan/nuclei_pot_autoscan.txt
-    [ -s $enumscan/nuclei_pot_autoscan.txt ] && echo -e ${BOLD}${GREEN}"[+] Auto Nuclei: [$(cat $enumscan/nuclei_pot_autoscan.txt | wc -l)] [$enumscan/nuclei_pot_autoscan.txt]"${NC}
+    local input_file="$urlprobed"
+    local output_file="$enumscan/nuclei_pot_autoscan.txt"
+
+    if [ ! -s "$input_file" ]; then
+        ui_print_warning "Skipping Auto Nuclei: $input_file is empty or missing."
+        return 1
+    fi
+
+    if [[ ! -e "$output_file" || "$rerun" == true ]]; then
+        ui_step_start "Nuclei Automatic Scan" "nuclei -l $input_file $nuclei_flags -resume -as -silent"
+        nuclei -l "$input_file" $nuclei_flags -resume -as -silent | anew "$output_file"
+        ui_step_end
+    fi
+
+    if [ -s "$output_file" ]; then
+        local count=$(wc -l < "$output_file")
+        ui_step_start "Auto Nuclei Results" ""
+        ui_print_result_item "Vulnerabilities" "$output_file" "$count"
+        ui_step_end
+    fi
 }
 
 full_nuclei(){
-    [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo -e "${YELLOW}[*] Running Nuclei Full-Scan\n${NC}"
-    [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && echo "${BLUE}[#] nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt ${NC}"
-    [[ ! -e $enumscan/nuclei_full.txt || $rerun == true ]] && nuclei -l $urlprobed $nuclei_flags -resume -silent | anew $enumscan/nuclei_full.txt
-    [ -s $enumscan/nuclei_full.txt ] && echo -e ${BOLD}${GREEN}"Full Nuclei: [$(cat $enumscan/nuclei_full.txt | wc -l)] [$enumscan/nuclei_full.txt]"${NC}
+    local input_file="$urlprobed"
+    local output_file="$enumscan/nuclei_full.txt"
+
+    if [ ! -s "$input_file" ]; then
+        ui_print_warning "Skipping Full Nuclei: $input_file is empty or missing."
+        return 1
+    fi
+
+    if [[ ! -e "$output_file" || "$rerun" == true ]]; then
+        ui_step_start "Nuclei Full Scan" "nuclei -l $input_file $nuclei_flags -resume -silent"
+        nuclei -l "$input_file" $nuclei_flags -resume -silent | anew "$output_file"
+        ui_step_end
+    fi
+
+    if [ -s "$output_file" ]; then
+        local count=$(wc -l < "$output_file")
+        ui_step_start "Full Nuclei Results" ""
+        ui_print_result_item "Vulnerabilities" "$output_file" "$count"
+        ui_step_end
+    fi
 }
 
 xsscan(){
-    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${YELLOW}"[*] Initiating XSS Scan"${NC}
-    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BLUE}"[#] cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt"${NC}
-    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt
-    [[ -s $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BOLD}${GREEN}"XSS Scan Result: [$(cat $enumscan/xss_results.txt | wc -l)] [$enumscan/xss_results.txt]"${NC}
+    local input_file="$enumscan/URLs/paramurl.txt"
+    local output_file="$enumscan/xss_results.txt"
+
+    if [ ! -s "$input_file" ]; then
+        ui_print_warning "Skipping XSS Scan: $input_file is empty or missing."
+        return 1
+    fi
+
+    if [[ ! -e "$output_file" || "$rerun" == true ]]; then
+        ui_step_start "XSS Scan (Dalfox)" "cat $input_file | dalfox pipe -o $output_file"
+        cat "$input_file" | dalfox pipe --silent -o "$output_file"
+        ui_step_end
+    fi
+
+    if [ -s "$output_file" ]; then
+        local count=$(wc -l < "$output_file")
+        ui_step_start "XSS Scan Results" ""
+        ui_print_result_item "XSS Findings" "$output_file" "$count"
+        ui_step_end
+    fi
 }
 
 function enumVuln(){
-    [[ -s $enumscan/URLs/paramurl.txt && "$vuln" == true || $nucleifuzz == true || "$all" == true ]] && nuclei_fuzzer
-    [[ "$vuln" == true ]] &&  auto_nuclei  2>/dev/null || echo -e "${BLUE}[*] Nuclei Automatic Scan on $potentialsdurls >> ${NC}$enumscan/nuclei_pot_autoscan.txt"
-    [[ "$all" == true ]] && full_nuclei  2>/dev/null|| echo -e "${BLUE}[*] Nuclei Full Scan on $urlprobed >> ${NC}$enumscan/nuclei_full.txt"
-    [[ "$vuln" == true ]] && xsscan 2>/dev/null || echo -e "${BLUE}[*] XSS Scan on $enumscan/URLs/paramurl.txt >> ${NC}$enumscan/xss_reults.txt"
+    ui_print_header "VULNERABILITY ENUMERATION" "Active Scans & Fuzzing"
+
+    # Nucli Fuzzer
+    if [[ "$vuln" == true || "$nucleifuzz" == true || "$all" == true ]]; then
+        nuclei_fuzzer
+    fi
+
+    # Auto Nuclei
+    if [[ "$vuln" == true || "$all" == true ]]; then
+        auto_nuclei
+    fi
+
+    # Full Nuclei
+    if [[ "$all" == true ]]; then
+        full_nuclei
+    fi
+
+    # XSS Scan
+    if [[ "$vuln" == true || "$all" == true ]]; then
+        xsscan
+    fi
 }

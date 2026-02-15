@@ -49,11 +49,8 @@ function httpprobing(){
       
       [[ ! -e $potentialsdurls || $rerun == true ]] && ui_print_info "Extracting Potential Host URLs"
       if [[ -e $httpxout.json || $rerun == true ]]; then
-          # Logic:
-          # 1. Select interesting status codes (2xx, 3xx, 401, 405)
-          # 2. Output .url (always interesting if status matches)
-          # 3. Output .final_url (if it exists and is different from .url)
-          cat $httpxout.json | jq -r 'select((.status_code >= 200 and .status_code < 400) or .status_code == 401 or .status_code == 405) | .url, (.final_url // empty)' | sort -u | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+          cat $httpxout.json | jq -r 'select(.status_code | tostring | test("^(20|30)")) | .final_url' | grep -v null | grep '^http' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+          cat $httpxout.json | jq -r 'select(.status_code | tostring | test("^(20|30)")) | select(.final_url == null) | .url' | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
       fi
   fi
   
@@ -71,10 +68,9 @@ function httpprobing(){
       ui_box_results "Probing Results" "${results_data[@]}"
 
       [[ ! -e $potentialsdurls || $rerun == true ]] && ui_print_info "Extracting Potential Subdomain URLs"
-      if [[ -e $httpxout || $rerun == true ]]; then
-          # Logic:
-          # Capture both initial URL and Final URL if they are in scope (contain domain)
-          cat $httpxout.json | jq -r 'select((.status_code >= 200 and .status_code < 400) or .status_code == 401 or .status_code == 405) | .url, (.final_url // empty)' | grep "$domain" | sort -u | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+      if [[ -e $httpxout.json || $rerun == true ]]; then
+          cat $httpxout.json | jq -r 'select(.status_code | tostring | test("^(20|30)")) | .final_url' | grep -v null | grep '^http' | grep "$domain" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
+          cat $httpxout.json | jq -r 'select(.status_code | tostring | test("^(20|30)")) | select(.final_url == null) | .url' | grep "$domain" | anew -q $potentialsdurls-tmp &>/dev/null 2>&1
       fi
   fi
        

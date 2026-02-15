@@ -169,7 +169,7 @@ dependency_installer(){
     check_exist alterx     || install_go "github.com/projectdiscovery/alterx/cmd/alterx@latest" "alterx"
     check_exist dnsx       || install_go "github.com/projectdiscovery/dnsx/cmd/dnsx@latest" "dnsx"
     check_exist dmut       || { install_go "github.com/bp0lr/dmut@latest" "dmut" && dmut --update-files &>/dev/null; }
-    check_exist jsleak     || install_go "github.com/0xTeles/jsleak/v2/jsleak@latest" "jsleak"
+    check_exist jsleak     || install_go "github.com/channyein1337/jsleak@latest" "jsleak"
     check_exist wappscan   || install_go "github.com/mr-rizwan-syed/wappscan@latest" "wappscan"
 
     if ! check_exist httpx; then
@@ -230,6 +230,7 @@ dependency_installer(){
         fi
         if [ -d ./MISC/Interlace ]; then
             pip3 install -r ./MISC/Interlace/requirements.txt --break-system-packages >/dev/null 2>&1
+            pip3 install setuptools --break-system-packages >/dev/null 2>&1
             apt-get install -y python3-netaddr python3-tqdm >/dev/null 2>&1
             (cd ./MISC/Interlace && python3 setup.py install >/dev/null 2>&1)
             if check_exist interlace; then
@@ -266,43 +267,13 @@ dependency_installer(){
         fi
     fi
 
-    # --- Git-cloned Python tools ---
-    if ! check_exist ./MISC/LinkFinder; then
-        echo -e "${YELLOW}[*] Installing LinkFinder ${NC}"
-        if git clone https://github.com/GerbenJavado/LinkFinder.git ./MISC/LinkFinder >/dev/null 2>&1; then
-            pip3 install -r ./MISC/LinkFinder/requirements.txt --break-system-packages >/dev/null 2>&1
-            python3 ./MISC/LinkFinder/setup.py install >/dev/null 2>&1
-            echo -e "${GREEN}[✔] LinkFinder installed${NC}"
-        else
-            echo -e "${RED}[✘] Failed to clone LinkFinder${NC}"
-            FAILED_INSTALLS+=("LinkFinder")
-        fi
-    fi
 
-    if ! check_exist ./MISC/SecretFinder; then
-        echo -e "${YELLOW}[*] Installing SecretFinder ${NC}"
-        if git clone https://github.com/m4ll0k/SecretFinder.git ./MISC/SecretFinder >/dev/null 2>&1; then
-            pip3 install -r ./MISC/SecretFinder/requirements.txt --break-system-packages >/dev/null 2>&1
-            echo -e "${GREEN}[✔] SecretFinder installed${NC}"
-        else
-            echo -e "${RED}[✘] Failed to clone SecretFinder${NC}"
-            FAILED_INSTALLS+=("SecretFinder")
-        fi
-    fi
 
     # --- Pipx Tools (Waymore, xnLinkFinder) ---
     install_pipx "git+https://github.com/xnl-h4ck3r/waymore.git" "waymore"
     install_pipx "xnLinkFinder" "xnLinkFinder"
 
-    if ! check_exist ./MISC/fuzzing-templates; then
-        echo -e "${YELLOW}[*] Installing fuzzing-templates ${NC}"
-        if git clone https://github.com/projectdiscovery/fuzzing-templates.git ./MISC/fuzzing-templates >/dev/null 2>&1; then
-            echo -e "${GREEN}[✔] fuzzing-templates installed${NC}"
-        else
-            echo -e "${RED}[✘] Failed to clone fuzzing-templates${NC}"
-            FAILED_INSTALLS+=("fuzzing-templates")
-        fi
-    fi
+
 
     # --- Static file downloads ---
     check_exist "/usr/share/dirb/wordlists/dicc.txt" || wget -q https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -P /usr/share/dirb/wordlists/
@@ -315,9 +286,8 @@ dependency_installer(){
 
 required_tools=("pv" "go" "python3" "ccze" "uncover" "tmux" "git" "pip" "knockknock" "subfinder" "ipcalc" "asnmap" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "shodan" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "alterx" "dalfox" "massdns" "puredns" "pipx" "waymore" "xnLinkFinder" "jsleak" "wappscan")
 required_directories=(
-    "./MISC/LinkFinder"
-    "./MISC/SecretFinder"
-    "./MISC/fuzzing-templates"
+
+
     "./MISC/fingerprints.json"
     "./MISC/technologies.json"
     "$HOME/.gf/excludeExt.json"
@@ -373,5 +343,10 @@ else
     echo -e "${CYAN}${wul}\nAll Good - JOD\n${NC}"
     # Reminder for pipx path
     echo -e "${YELLOW}[!] If you just installed pipx tools, you may need to run: source ~/.bashrc${NC}"
+    echo -e ""
+    echo -e "${YELLOW}[!] POST-INSTALL SETUP:${NC}"
+    echo -e "${YELLOW}1. Setup Subfinder API Keys:${NC} https://docs.projectdiscovery.io/opensource/subfinder/install#post-install-configuration"
+    echo -e "${YELLOW}2. Setup Shodan & URLScan API keys:${NC} Edit ${GREEN}config.yml${NC}"
+    echo -e ""
     exec "$SHELL" && exit
 fi
