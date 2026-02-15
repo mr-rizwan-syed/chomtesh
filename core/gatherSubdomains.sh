@@ -5,26 +5,64 @@
 #==============================================================================
 
 function getsubdomains(){
-  [[ ! -e $subdomains && ! -f $domain ]] && echo -e "${YELLOW}${BOLD}[*] Gathering Subdomains: $domain${NC}"
-  domain=$1
-  subdomains=$2
-
-  [[ ! -e $subdomains && ! -f $domain ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags | anew -q $subdomains ${NC}"
-  [[ ! -e $subdomains && ! -f $domain ]] && subfinder -d $domain $subfinder_flags 2>/dev/null | anew -q $subdomains &>/dev/null 2>&1
-
-  [[ ! -e $subdomains && -f $domain ]] && echo -e "${BLUE}[#] subfinder -dL $domain $subfinder_flags | anew -q $subdomains ${NC}"
-  [[ ! -e $subdomains && -f $domain ]] && subfinder -dL $domain $subfinder_flags 2>/dev/null | anew -q $subdomains &>/dev/null 2>&1
+  local target="$1"
+  local output_file="$2"
   
-  [[ -e $subdomains && $rerun == true ]] && echo -e "${BLUE}[#] subfinder -d $domain $subfinder_flags| anew -q $results/subdomains.tmp ${NC}"
-  [[ -e $subdomains && $rerun == true ]] && subfinder -d $domain $subfinder_flags 2>/dev/null| anew -q $results/subdomains.tmp &>/dev/null 2>&1
-  [[ -e "$results/subdomains.tmp" ]] && grep -Fxvf $subdomains $results/subdomains.tmp > $results/newsubdomains.tmp
+  if [ -z "$target" ] || [ -z "$output_file" ]; then
+      ui_print_error "gatherSubdomains requires target and output file arguments"
+      return 1
+  fi
 
-  [[ -e $results/newsubdomains.tmp ]] && nsdc=$(<$results/newsubdomains.tmp wc -l)
-  [[ $rerun == true ]] && echo -e "${GREEN}${BOLD}[$] New Subdomains Collected ${NC}[$nsdc] [$results/newsubdomains.tmp]"
+  ui_print_header "SUBDOMAIN ENUMERATION" "$target"
   
-  [[ -e $results/newsubdomains.tmp ]] && cat $results/newsubdomains.tmp | anew -q $subdomains
-  [[ -e $results/subdomains.tmp ]] && rm $results/subdomains.tmp
+  # Determine subfinder flag based on input type (-d for single, -dL for list)
+  local subfinder_flag="-d"
+  if [ -f "$target" ]; then
+      subfinder_flag="-dL"
+  fi
 
-  sdc=$(<$subdomains wc -l)
-  echo -e "${GREEN}${BOLD}[$] Total Subdomains Collected ${NC}[$sdc] [$subdomains]"
+  # Prepare temporary file for new subdomains
+  local new_subs_file="$results/newsubdomains.tmp"
+  
+  # Option 2: Unified Step Box
+  ui_step_start "Subfinder" "subfinder $subfinder_flag $target $subfinder_flags | anew -q $output_file"
+  
+  # Optimize: Check if output file exists.
+  # If it exists, we track NEW subdomains in new_subs_file.
+  # If it doesn't exist (fresh scan), we just populate output_file directly.
+  # This avoids redundant httpx probing on "new" domains that are actually ALL domains.
+  
+  if [ -s "$output_file" ]; then
+      : > "$new_subs_file"
+      subfinder "$subfinder_flag" "$target" $subfinder_flags 2>/dev/null | anew "$output_file" > "$new_subs_file"
+  else
+      subfinder "$subfinder_flag" "$target" $subfinder_flags 2>/dev/null | anew "$output_file" > /dev/null
+      rm -f "$new_subs_file" 2>/dev/null # Ensure clean state
+  fi
+
+  # Reporting
+  local new_count=0
+  if [ -f "$new_subs_file" ]; then
+      new_count=$(wc -l < "$new_subs_file")
+  fi
+  local total_count=$(wc -l < "$output_file")
+  
+  # Build results array for boxed output
+  local results_data=()
+  results_data+=("Total Subdomains : $total_count")
+  
+  if [ "$new_count" -gt 0 ]; then
+      results_data+=("New Subdomains   : $new_count ($new_subs_file)")
+  else
+      results_data+=("New Subdomains   : 0")
+  fi
+  results_data+=("Output File      : $output_file")
+
+  ui_step_results "${results_data[@]}"
+  ui_step_end
+  
+  # Cleanup if empty
+  if [ "$new_count" -eq 0 ]; then
+      rm -f "$new_subs_file"
+  fi
 }

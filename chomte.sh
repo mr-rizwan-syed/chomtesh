@@ -24,7 +24,9 @@ cross=$(printf '\u2718')
 upper="${lightblue}╔$(printf '%.0s═' $(seq "80"))╗${end}"
 lower="${lightblue}╚$(printf '%.0s═' $(seq "80"))╝${end}"
 
-core="$PWD/core"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+core="$SCRIPT_DIR/core"
+ORIGINAL_ARGS=("$@")
 
 # for script_file in "$core"/*.sh; do
 #     source "$script_file"
@@ -38,43 +40,49 @@ source $core/portScanner.sh
 source $core/nmapScanner.sh
 source $core/probeHttp.sh
 source $core/contentDiscovery.sh
+source $core/techDetection.sh
 source $core/activeRecon.sh
 source $core/urlRecon.sh
 source $core/hostdiscovery.sh
 source $core/enumVuln.sh
 source $core/shodaner.sh
+source $core/ui_helpers.sh
+source $core/report.sh
 
-# sed -i 's/\s\+/ /g' flags.conf
+# --- Helper Functions ---
+should_run() { [[ ! -e "$1" || "$rerun" == true ]]; }
 
-subfinder_flags=$(grep '^subfinder_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-dmut_flags=$(grep '^dmut_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-naabu_flags=$(grep '^naabu_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-httpx_flags=$(grep '^httpx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-webanalyze_flags=$(grep '^webanalyze_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-nmap_flags=$(grep '^nmap_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-dirsearch_flags=$(grep '^dirsearch_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-dnsx_flags=$(grep '^dnsx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-nuclei_flags=$(grep '^nuclei_flags=' flags.conf | awk -F= '{print $2}' | xargs) 
+log_debug() {
+  local logfile="${results:-/tmp}/debug.log"
+  echo "[$(date '+%H:%M:%S')] $*" >> "$logfile"
+}
+
+# --- Flag Parsing ---
+FLAGS_CONF="$SCRIPT_DIR/flags.conf"
+parse_flag() { grep "^$1=" "$FLAGS_CONF" | cut -d= -f2-; }
+
+subfinder_flags=$(parse_flag subfinder_flags)
+dmut_flags=$(parse_flag dmut_flags)
+naabu_flags=$(parse_flag naabu_flags)
+httpx_flags=$(parse_flag httpx_flags)
+wappscan_flags=$(parse_flag wappscan_flags)
+nmap_flags=$(parse_flag nmap_flags)
+dirsearch_flags=$(parse_flag dirsearch_flags)
+dnsx_flags=$(parse_flag dnsx_flags)
+nuclei_flags=$(parse_flag nuclei_flags)
+katana_flags=$(parse_flag katana_flags)
 
 ip_flags(){
-  naabu_flags=$(grep '^ip_naabu_flags=' flags.conf | awk -F= '{print $2}' | xargs)
-  httpx_flags=$(grep '^ip_httpx_flags=' flags.conf | awk -F= '{print $2}' | xargs)
+  naabu_flags=$(parse_flag ip_naabu_flags)
+  httpx_flags=$(parse_flag ip_httpx_flags)
 }
 
 banner(){
-echo -e '
-
- ██████╗██╗  ██╗ ██████╗ ███╗   ███╗████████╗███████╗   ███████╗██╗  ██╗
-██╔════╝██║  ██║██╔═══██╗████╗ ████║╚══██╔══╝██╔════╝   ██╔════╝██║  ██║
-██║     ███████║██║   ██║██╔████╔██║   ██║   █████╗     ███████╗███████║
-██║     ██╔══██║██║   ██║██║╚██╔╝██║   ██║   ██╔══╝     ╚════██║██╔══██║
-╚██████╗██║  ██║╚██████╔╝██║ ╚═╝ ██║   ██║   ███████╗██╗███████║██║  ██║
- ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝   ╚═╝   ╚══════╝╚═╝╚══════╝╚═╝  ╚═╝
-      '  | lolcat -a -d 1                          
+  ui_print_banner
 }
 
 function cleanup() {
-  echo "Cleaning up before exit"
+  ui_print_info "Cleaning up before exit"
   exit 0
 }
 
@@ -123,6 +131,7 @@ print_usage() {
   echo "    -brt | --dnsbrute               : DNS Recon Bruteforce"
   echo "        -ax | --alterx              : Subdomain Bruteforcing using DNSx on Alterx Generated Domains"
   echo "    -sto | --takeover               : Subdomain Takeover Scan"
+    echo "    -r   | --report                 : Show Summary Report"
   
   echo -e ""
   printf "\n${upper}\n\tGlobal Flags - ${wul}Applicable with both -d / -i ${NC}\n${lower}\n"
@@ -143,11 +152,11 @@ function domaindirectorycheck(){
     results=Results/$project
     if [ -d $results ]
     then
-        echo -e
-        echo -e "${yellowbg}[I] $results Directory already exists: $results\n${NC}"
+        # echo -e "${yellowbg}[I] $results Directory already exists: $results\n${NC}"
+        :
     else
         mkdir -p $results
-        echo -e "${BLUE}[I] $results Directory Created: $results\n${NC}" 
+        ui_print_success "$results Directory Created: $results" 
     fi
 }
 
@@ -159,17 +168,13 @@ for tool in "${required_tools[@]}"; do
     fi
 done
 if [ ${#missing_tools[@]} -ne 0 ]; then
-    echo -e ""
-    echo -e "${redbg}[-]The following tools are not installed:${NC} ${missing_tools[*]}"
+    ui_print_error "The following tools are not installed: ${missing_tools[*]}"
     exit 1
 fi
 
 function var_checker(){
-  echo -e "${yellowbg}[*] Checking for required arguments...${NC}"
 	if [[ -z ${project} ]]; then
-		echo -e "${RED}[-] ERROR: Project Name is not set${NC}"
-		echo -e "${RED}[-] Missing -p ${NC}"
-    #print_usage
+		ui_print_error "Project Name is not set (Missing -p)"
     exit 1
   else
     domaindirectorycheck
@@ -181,169 +186,288 @@ function var_checker(){
     [[ ${casnscan} == true ]] && ip_flags && runcidrscan
     [[ ${hostportscan} == true ]] && ip_flags && runhostportscan
   else
-    echo -e "${RED}[-] ERROR: IP or domain is not set\n[-] Missing -i or -d ${NC}"    
+    ui_print_error "IP or domain is not set (Missing -i or -d)"
   fi
 }
 
 
 #######################################################
-function declare(){
-  echo -e "${MAGENTA}---------------------------------${NC}"
-  echo -e "Results Dir: $results" && mkdir -p $results
-  echo -e "Enum Dir: ${enumscan#*/chomtesh/}" && mkdir -p $enumscan
-  echo -e "${MAGENTA}---------------------------------${NC}"
+function display_execution_context() {
+    echo -e ""
+    ui_print_info "Command: $0 ${ORIGINAL_ARGS[*]}"
+    
+    local active_modules=()
+    [[ "$domainscan" == true ]] && active_modules+=("Domain Scan")
+    [[ "$singledomain" == true ]] && active_modules+=("Single Domain")
+    [[ "$ipscan" == true ]] && active_modules+=("IP Scan")
+    [[ "$hostportscan" == true ]] && active_modules+=("Host:Port Scan")
+    [[ "$casnscan" == true ]] && active_modules+=("CIDR/ASN Scan")
+    
+    # Optional Modules
+    [[ "$dnsbrute" == true ]] && active_modules+=("DNS Brute")
+    [[ "$alterx" == true ]] && active_modules+=("Alterx")
+    [[ "$portprobe" == true ]] && active_modules+=("Port Probe")
+    [[ "$shodan" == true ]] && active_modules+=("Shodan")
+    [[ "$nmap" == true ]] && active_modules+=("Nmap")
+    [[ "$enum" == true ]] && active_modules+=("Active Recon")
+    [[ "$vuln" == true ]] && active_modules+=("Vuln Scan")
+    [[ "$all" == true ]] && active_modules+=("All Modules")
+    [[ "$enumxnl" == true ]] && active_modules+=("XNL Linkfinding")
+    [[ "$contentscan" == true ]] && active_modules+=("Content Discovery")
+    
+    if [ ${#active_modules[@]} -gt 0 ]; then
+        local modules_list=$(IFS=', '; echo "${active_modules[*]}")
+        ui_print_info "Active Modules: ${modules_list}"
+    fi
+     echo -e ""
+}
+
+function setup_dirs(){
+  display_execution_context
+  ui_print_info "Results Dir: $results" && mkdir -p $results
+  ui_print_info "Enum Dir: ${enumscan#*/chomtesh/}" && mkdir -p $enumscan
+}
+
+function phase_subdomain_enum() {
+    local target="$1"
+    # Logic common to single domain and domain list
+    # $target is either a single domain or a file path
+    [[ "$nosubdomainscan" != true ]] && getsubdomains "$target" "$results/subdomains.txt"
+    [[ "$nosubdomainscan" == true && -f "$target" ]] && cat "$target" | anew -q "$results/subdomains.txt"
+    
+    # DNS Brute and Takeover
+    [[ "$dnsbrute" == true || "$alterx" == true ]] && dnsreconbrute "$target" "$results/dnsbruteout.txt"
+    [[ "$shodan" == true && ! -f "$target" ]] && shodun "$target" &
+    
+    # Subdomain Takeover (Explicit Request)
+    [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && subdomaintakeover &
+    
+    # Wait for parallel jobs if any launched? 
+    # Current implementation waits after probing, which is fine.
+}
+
+function phase_probing() {
+    # Consolidated probing logic
+    # Expects $subdomains to be set or $domain in single mode
+    
+    if [[ "$singledomain" == true ]]; then
+         portscanner "$domain" $naabuout
+         httpprobing "$hostport" "$httpxout"
+    else
+         # Probe the consolidated subdomains list once (includes brute results)
+         httpprobing "$subdomains" "$httpxout"
+         # On --rerun, also probe only the newly discovered delta
+         [[ -e "$results/newsubdomains.tmp" ]] && httpprobing "$results/newsubdomains.tmp" "$httpxout-new"
+    fi
+     
+    # Wait for background jobs (shodan/takeover) launched in enum phase
+    wait 
+    
+    # Merge all httpx outputs
+    # Merge all httpx outputs
+    if [[ "$singledomain" != true ]]; then
+        local csv_files=()
+        [[ -s "$httpxout.csv" ]] && csv_files+=("$httpxout.csv")
+        [[ -s "$httpxout-new.csv" ]] && csv_files+=("$httpxout-new.csv")
+        
+        if [ ${#csv_files[@]} -gt 0 ]; then
+             csvstack "${csv_files[@]}" > "$results/httpxmerge.csv" 2>/dev/null
+        fi
+
+        # Concatenate JSONs to NDJSON (standard for tools) or Array if needed.
+        # Assuming NDJSON is better for streaming/concat. 
+        # But if jq -s add was used, maybe they wanted a single object? Unlikely.
+        # Let's produce a JSON Array which is safer for "merge.json" naming.
+        # Check if files exist to avoid jq errors.
+        if ls "$results"/httpx*.json 1> /dev/null 2>&1; then
+             cat "$results"/httpx*.json | jq -s '.' > "$results/httpxmerge.json" 2>/dev/null
+        fi
+    fi
+    
+    # Host Port / Naabu / Nmap logic
+    if [[ "$all" == true || "$pp" == true ]]; then
+       if [[ "$singledomain" == true ]]; then
+            # Single Domain specific additional scanning logic if needed?
+            # Original code just ran nmap
+             [[ "$nmap" == "true" ]] && nmapscanner "$ipport" "$nmapscans"
+       else
+          [[ ! -e "$naabuout.json" || "$rerun" == true ]] && echo -e "${YELLOW}[*] Probing HTTP web services excluding ports 80 & 443${NC}"
+          
+          # Logic differs slightly between List and Domain modes in original code for DNS resolution
+          # Unified approach: Always resolve from subdomains list
+          dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
+          
+          # Use subdomains list as primary input for port scanning
+          local target_list="$results/subdomains.txt"
+          # [[ -s "$results/dnsxresolved.txt" ]] && target_list="$results/dnsxresolved.txt"
+          
+          portscanner "$target_list" "$naabuout"
+          
+          # Port mapper if needed? Original code had it only in List mode block
+          [[ -e "$dnsxresolved" && -e "$naabuout.csv" ]] && portmapper
+          
+          [[ -e "$hostport" ]] && cat "$hostport" | grep -vE ':80$|:443$' | anew -q "$hostport-services"
+          [[ ! -e "$httpxout-portprobe.json" ]] && echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
+          [[ -s "$hostport-services" ]] && httpprobing "$hostport-services" "$httpxout-portprobe"
+          
+          # Re-merge with portprobe data
+          local csv_files_merge=()
+          [[ -s "$httpxout.csv" ]] && csv_files_merge+=("$httpxout.csv")
+          [[ -s "$httpxout-portprobe.csv" ]] && csv_files_merge+=("$httpxout-portprobe.csv")
+          [[ -s "$httpxout-new.csv" ]] && csv_files_merge+=("$httpxout-new.csv")
+          
+          if [ ${#csv_files_merge[@]} -gt 0 ]; then
+               csvstack "${csv_files_merge[@]}" > "$results/httpxmerge.csv" 2>/dev/null
+          fi
+          
+          if ls "$results"/httpx*.json 1> /dev/null 2>&1; then
+               cat "$results"/httpx*.json | jq -s '.' > "$results/httpxmerge.json" 2>/dev/null
+          fi
+          
+          [[ "$nmap" == "true" ]] && nmapscanner "$ipport" "$nmapscans"
+       fi
+    fi
+    
+    # Run Tech Detection and Summary (No Nuclei yet)
+    if [[ -e "$httpxout" ]]; then
+        identify_technologies
+        show_tech_summary
+    fi
+}
+
+function phase_vulnerability_scan() {
+    [[ "$reconurl" == true || "$all" == true ]] && recon_url
+    [[ "$enumxnl" == true && ! -f "$domain" || "$all" == true ]] && xnl
+    
+    # Active Recon (Nuclei Technology Scan)
+    [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && active_recon
+    
+    [[ "$vuln" == true ]] && enumVuln
+    [[ "$contentscan" == true || "$all" == true ]] && { [[ "$cdlist" ]] && content_discovery "$cdlist" || content_discovery "$potentialsdurls"; }
 }
 
 function rundomainscan(){
-  if [[ -n "$domain" && ! -f "$domain" && $singledomain != true ]];then
-    echo -e ${BLUEBG}"Domain Module $domain $domainscan - Domain Specified"${NC}
-    results="$results/$domain"
-    declared_paths
-    declare
-    #---------------------------------------------------#
-    [[ "$nosubdomainscan" != true ]] && getsubdomains "$domain" "$results/subdomains.txt"
-    [[ "$dnsbrute" == true ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
-    [[ "$shodan" == true ]] && shodun "$domain"
-    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp "$httpxout-brute"
-    [[ "$takeover" == true ]] && subdomaintakeover
-    [[ -e $results/newsubdomains.tmp ]] && httpprobing $results/newsubdomains.tmp "$httpxout-new"
-    [[ ! -e $results/newsubdomains.tmp ]] && httpprobing $subdomains $httpxout
-    
-    csvstack $httpxout.csv $httpxout-brute.csv $httpxout-new 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
-    jq -s add $results/httpx*.json > $results/httpxmerge.json 2>/dev/null
-    
-    if [[ "$all" == true || "$pp" == true && -f "$httpxout.json" ]]; then
-      [[ ! -e $naabuout.json || $rerun == true ]] && echo -e "${YELLOW}[*] Probing HTTP web services excluding ports 80 & 443${NC}"
-      dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt"
-      portscanner "$results/subdomains.txt" $naabuout
-      [[ -e $hostport ]] && cat $hostport | grep -vE ':80$|:443$' | anew -q $hostport-services
-      [[ ! -e $httpxout-portprobe.json ]] && echo -e "${YELLOW}[*] Rerunning HTTP Probing excluding port 80 & 443${NC}"
-      [[ -s $hostport-services ]] && httpprobing "$hostport-services" "$httpxout-portprobe"
-      csvstack $httpxout.csv $httpxout-brute.csv $httpxout-portprobe.csv $httpxout-new 2>/dev/null > $results/httpxmerge.csv 2>/dev/null
-      jq -s add $results/httpx*.json > $results/httpxmerge.json 2>/dev/null
-      
-      [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
-    fi
-    if [[ $enum == true || "$all" == true ]]; then
-        [[ -e $httpxout || "$all" == true ]] && active_recon
-        [[ $reconurl == true || "$all" == true ]] && recon_url
-        [[ $enumxnl == true && ! -f $domain || "$all" == true ]] && xnl
-        [[ $vuln == true ]] && enumVuln
-        [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
-    fi
-    #---------------------------------------------------#
-  elif [ -n "$domain" ] && [ -f "$domain" ];then
-    echo -e "Domain Module $domain $domainscan - List Specified"
-    domainlist=true
-    DomainListFolder=$(echo $domain | cut -d . -f 1)
-    results="$results/$DomainListFolder"
-    declared_paths
-    declare
-    #---------------------------------------------------#
-    cat "$domain" | anew -q "$results/targets.txt"
-    [ "$nosubdomainscan" != true ] && getsubdomains "$results/targets.txt" "$results/subdomains.txt"
-    [ "$nosubdomainscan" == true ] && cat "$domain" | anew -q "$results/subdomains.txt"
-    [[ "$dnsbrute" == true && -f "$domain" ]] && dnsreconbrute "$domain" "$results/dnsbruteout.txt"
-    [[ "$takeover" == true && -f "$domain" ]] && subdomaintakeover
-    httpprobing $subdomains $httpxout
-    [[ -s $results/brutesubdomains.tmp ]] && httpprobing $results/brutesubdomains.tmp "$httpxout-brute"
-    [[ "$takeover" == true ]] && subdomaintakeover
+    # 1. Setup Environment
+    if [[ -n "$domain" && ! -f "$domain" && "$singledomain" != true ]]; then
+        # Standard Domain Mode
+        ui_print_header "DOMAIN MODULE" "$domain"
+        results="Results/$project/$domain"
+        declared_paths
+        setup_dirs
         
-    [[ ! -e $hostport || $rerun == true ]] && cat  $naabuout.json | jq -r '"\(.host):\(.port)"' | anew $hostport -q &>/dev/null
+        phase_subdomain_enum "$domain"
+        phase_probing
+        [[ $enum == true || "$all" == true ]] && phase_vulnerability_scan
 
-    if [[ "$all" == true || "$pp" == true && -f "$results/httpxout.csv" ]]; then
-      dnsresolve "$results/subdomains.txt" "$results/dnsreconout.txt" "$results/dnsxresolved.txt"
-      portscanner "$results/dnsxresolved.txt" $naabuout
-      [[ -e $dnsxresolved && -e $naabuout.csv ]] && portmapper
-      [[ -e $hostport ]] && cat $hostport | grep -v ":80\|:443" | anew -q $hostport-services
-      echo -e "${MAGENTA}Http Probing excluding port 80 & 443${NC}"
-      [[ -s $hostport-services ]] && httpprobing "$hostport-services" "$httpxout-portprobe"
-      [ -e $results/httpxout2.csv ] && csvstack $results/httpxout.csv $results/httpxout2.csv > $results/httpxmerge.csv
-      [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans"
+    elif [[ -n "$domain" && -f "$domain" ]]; then
+        # Domain List Mode
+        ui_print_header "DOMAIN MODULE" "List: $domain"
+        domainlist=true
+        local list_name=$(basename "$domain" | cut -d . -f 1)
+        results="Results/$project/$list_name"
+        declared_paths
+        setup_dirs
+        
+        # Prime targets
+        cat "$domain" | anew -q "$results/targets.txt"
+        
+        phase_subdomain_enum "$results/targets.txt"
+        phase_probing
+        [[ $enum == true || "$all" == true ]] && phase_vulnerability_scan
+
+    elif [[ "$singledomain" == true && -n "$domain" ]]; then
+        # Single Domain Mode
+        ui_print_header "SINGLE DOMAIN MODULE" "$domain"
+        results="Results/$project/$domain"
+        declared_paths
+        setup_dirs
+        
+        # Skip subdomain enum
+        phase_probing
+        [[ $enum == true || "$all" == true ]] && phase_vulnerability_scan
     fi
-
-    if [[ $enum == true || "$all" == true ]]; then
-        [[ -e $httpxout || "$all" == true ]] && active_recon
-        [[ $reconurl == true || "$all" == true ]] && recon_url
-        [[ $enumxnl == true && ! -f $domain || "$all" == true ]] && xnl
-        [[ "$vuln" == true ]] && enumVuln
-        [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
-    fi
-
-    #---------------------------------------------------#
-  elif [[ $singledomain == true && -n "$domain" ]];then
-    echo -e "Single Domain Module $domain"
-    results="$results/$domain"
-    declared_paths
-    declare
-    portscanner "$domain" $naabuout
-    httpprobing "$hostport" "$httpxout"
-    [[ $nmap == "true" ]] && nmapscanner "$ipport" "$nmapscans" 
-
-    if [[ $enum == true || "$all" == true ]]; then
-        [[ -e $httpxout || "$all" == true ]] && active_recon
-        [[ $reconurl == true || "$all" == true ]] && recon_url
-        [[ $enumxnl == true && ! -f $domain || "$all" == true ]] && xnl
-        [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
-    fi
-    #---------------------------------------------------#
-  fi
 }
 
 function runipscan(){
   ip_pattern='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
   if [[ $ip =~ $ip_pattern ]] && [[ $ip != *"\/"* ]] && [[ $ip != *"AS"* ]] || [[ -f $ip ]]; then
-    echo -e "IP Module $ip $ipscan"
-    echo -e "${MAGENTA}[*] IP Scan is Running on $ip${NC}"
-    [[ $ip =~ $ip_pattern ]] && ipdir=$(echo $ip | tr . _)
-    [[ -f $ip ]] && ipdir=$(basename $ip | tr . _)
-    results="$results/$ipdir"
+    # Valid IP or File
+    if [[ -f $ip ]]; then
+        ipdir=$(basename "$ip" | tr . _)
+        ui_print_header "IP MODULE" "File: $ip"
+    else
+        ipdir=$(echo "$ip" | tr . _)
+        ui_print_header "IP MODULE" "$ip"
+    fi
+
+    results="Results/$project/$ipdir"
     declared_paths
-    declare
-    portscanner "$ip" $naabuout
+    setup_dirs
+    
+    portscanner "$ip" "$naabuout"
     httpprobing "$ipport" "$httpxout"
-    [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
-      if [[ $enum == true || "$all" == true ]]; then
-        [[ -e $httpxout || "$all" == true ]] && active_recon
-        [[ "$vuln" == true ]] && enumVuln
-        [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
-      fi
+    [[ "$nmap" == "true" ]] && nmapscanner "$ipport" "$nmapscans"
+    
+    # Run Tech Detect and Summary
+    if [[ -e "$httpxout" ]]; then
+       identify_technologies
+       show_tech_summary
+    fi
+     
+    # Run active_recon if requested
+    [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && active_recon
+    
+    [[ $vuln == true || "$all" == true ]] && phase_vulnerability_scan
+
   else
-    echo -e "${RED}[*] IP Input is Wrong; Try Correct Flag --asn / --cidr $ip${NC}"
+    ui_print_error "IP Input is Wrong; Try Correct Flag --asn / --cidr $ip"
   fi
-  
 }
 
 function runcidrscan(){
-  echo -e "CIDR/ASN Module $casn"
-  echo -e "${MAGENTA}[*] CIDR/ASN Scan is Running on $cidr $asn $casn${NC}"
-  casndir=$(echo $casn | tr / _)
-  results="$results/$casndir"
+  ui_print_header "CIDR/ASN MODULE" "$casn"
+  
+  casndir=$(echo "$casn" | tr / _)
+  results="Results/$project/$casndir"
   declared_paths
-  declare
-  nmapdiscovery $casn
+  setup_dirs
+  
+  nmapdiscovery "$casn"
   portscanner "$aliveip" "$naabuout"
   httpprobing "$ipport" "$httpxout"
-  [[ $nmap == "true" ]] && nmapscanner $ipport $nmapscans
-  if [[ $enum == true || "$all" == true ]]; then
-      [[ -e $httpxout || "$all" == true ]] && active_recon
-      [[ "$vuln" == true ]] && enumVuln
-      [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
+  [[ "$nmap" == "true" ]] && nmapscanner "$ipport" "$nmapscans"
+  
+  # Run Tech Detect and Summary
+  if [[ -e "$httpxout" ]]; then
+      identify_technologies
+      show_tech_summary
   fi
+  
+  # Run active_recon if requested
+  [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && active_recon
+  
+  [[ $vuln == true || "$all" == true ]] && phase_vulnerability_scan
 }
 
 function runhostportscan(){
-  echo -e "${MAGENTA}[*] HostPort Scan is Running on $hostportlist${NC}"
-  if [ -n "${hostportlist}" ];then
+  ui_print_header "HOSTPORT SCAN MODULE" "$hostportlist"
+  if [ -n "${hostportlist}" ]; then
     declared_paths
-    declare
+    setup_dirs
+    
     httpprobing "$hostportlist" "$httpxout"
-    [[ $nmap == "true" ]] && nmapscanner "$hostportlist" "$nmapscans" 
-    if [[ $enum == true || "$all" == true ]]; then
-        [[ -e $httpxout || "$all" == true ]] && active_recon
-        [[ "$vuln" == true ]] && enumVuln
-        [[ $contentscan == true || "$all" == true ]] && { [[ $cdlist ]] && content_discovery $cdlist || content_discovery $potentialsdurls; }
+    [[ "$nmap" == "true" ]] && nmapscanner "$hostportlist" "$nmapscans" 
+    
+    # Run Tech Detect and Summary
+    if [[ -e "$httpxout" ]]; then
+        identify_technologies
+        show_tech_summary
     fi
+
+    # Run active_recon
+    [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && active_recon
+    
+    [[ $vuln == true || "$all" == true ]] && phase_vulnerability_scan
   fi
 }
 
@@ -377,9 +501,10 @@ while [[ $# -gt 0 ]]; do
       nosubdomainscan=true
       shift
       ;;
-    -sto|--takeover)
-      takeover=true
-      shift 
+
+    -r|--report)
+      report=true
+      shift
       ;;
     -v|--vuln)
       vuln=true
@@ -474,3 +599,7 @@ elif [[ -z $1 ]]; then
 fi
 
 var_checker
+
+if [[ "$report" == true ]]; then
+    generate_report "$project" "$domain"
+fi

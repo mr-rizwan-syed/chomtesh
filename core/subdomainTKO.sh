@@ -6,18 +6,34 @@
 
 function subdomaintakeover(){
   mkdir -p $enumscan
-  trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
+  trap 'ui_handle_sigint' SIGINT
   echo -e ""
-  echo -e "${YELLOW}[*] Running Subdomain Takeover Scan\n${NC}" 
-
-  if [ -e $urlprobed ]; then
-      trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-      [[ ! -e $enumscan/nuclei-takeover.txt || $rerun == true ]] && echo -e "${BLUE}[#] nuclei -l $urlprobed -t ~/nuclei-templates/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
-      [[ ! -e $enumscan/nuclei-takeover.txt || $rerun == true ]] && nuclei -l $urlprobed -t ~/nuclei-templates/http/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt 2>/dev/null
+  
+  # Determine target list (All vs New)
+  local target_list=""
+  local msg_type="ALL"
+  
+  if [ -s "$results/newsubdomains.tmp" ]; then
+      target_list="$results/newsubdomains.tmp"
+      msg_type="NEW"
+  elif [ -s "$subdomains" ]; then
+      target_list="$subdomains"
   fi
-  if [ -e $subdomains ]; then
-      trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-      [[ ! -e $enumscan/subjack-takeover.txt || $rerun == true ]] && echo -e "${BLUE}[#] subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
-      [[ ! -e $enumscan/subjack-takeover.txt || $rerun == true ]] && subjack -w $subdomains -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt 2>/dev/null
+  
+  if [ -s "$target_list" ]; then
+      echo -e "${YELLOW}[*] Running Subdomain Takeover Scan on $msg_type subdomains${NC}"
+      
+      # 1. Nuclei Takeover (HTTP/DNS)
+      # We use the domain list; Nuclei will handle probing/connection.
+      if [[ ! -e "$enumscan/nuclei-takeover.txt" || "$rerun" == true ]]; then
+           echo -e "${BLUE}[#] nuclei -l $target_list -t ~/nuclei-templates/http/takeovers/ -silent | anew $enumscan/nuclei-takeover.txt ${NC}" 
+           nuclei -l "$target_list" -t ~/nuclei-templates/http/takeovers/ -silent 2>/dev/null | anew "$enumscan/nuclei-takeover.txt"
+      fi
+
+      # 2. Subjack Takeover (CNAME)
+      if [[ ! -e "$enumscan/subjack-takeover.txt" || "$rerun" == true ]]; then
+           echo -e "${BLUE}[#] subjack -w $target_list -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
+           subjack -w "$target_list" -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json -v 3 2>/dev/null | grep -v "Not Vulnerable" | anew "$enumscan/subjack-takeover.txt"
+      fi
   fi
 }

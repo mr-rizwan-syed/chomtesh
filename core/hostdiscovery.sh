@@ -40,50 +40,45 @@ is_private_ip() {
 
 # Function for host discovery
 hostdiscovery() {
-    trap 'echo -e "${RED}Ctrl + C detected, That'\''s what she said${NC}"' SIGINT
-
+    ui_print_header "Host Discovery" "Identifying Alive Hosts"
+    
+    # Input Processing
     if [ -f "$1" ]; then
-        # Input is a file containing a list of hostnames or IP addresses
         input_file="$1"
     else
-        # Input is a single hostname or IP address
         input_file="/tmp/hostdiscovery_input.txt"
         echo "$1" > "$input_file"
     fi
-
-    echo -e "${BLUEBG}1. Nmap Ping Scan Only $1 ${NC}"
-    nmap -sn -iL "$input_file" -oG "$results/hostdiscovery1.gnmap" &>/dev/null
-    [ -e "$results/hostdiscovery1.gnmap" ] && cat "$results/hostdiscovery1.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
-
-    echo -e "${BLUEBG}2. Nmap TCP SYN ping scan $1 ${NC}"
-    nmap -sn -PS -iL "$input_file" -oG "$results/hostdiscovery2.gnmap" &>/dev/null
-    [ -e "$results/hostdiscovery2.gnmap" ] && cat "$results/hostdiscovery2.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
-
-    echo -e "${BLUEBG}3. Nmap TCP ACK ping scan $1 ${NC}"
-    nmap -sn -PA -iL "$input_file" -oG "$results/hostdiscovery3.gnmap" &>/dev/null
-    [ -e "$results/hostdiscovery3.gnmap" ] && cat "$results/hostdiscovery3.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
-
-    is_private_ip "$(cat "$input_file")"
     
-    if [[ "$is_private" -eq 1 ]]; then
-        echo -e "${BLUEBG}4. Nmap ARP Ping Scan $1 ${NC}"
-        nmap -sn -PR -iL "$input_file" -oG "$results/hostdiscovery4.gnmap" &>/dev/null
-        [ -e "$results/hostdiscovery4.gnmap" ] && cat "$results/hostdiscovery4.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
+    local target_count=$(wc -l < "$input_file")
+    ui_step_start "Discovery Scan" "Nmap Ping Scan (PE/PS/PA/PU) on $target_count targets"
+    ui_start_spinner "Scanning for alive hosts..."
 
-        echo -e "${BLUEBG}5. Nmap ICMP Echo Request Scan $1 ${NC}"
-        nmap -sn -PE -iL "$input_file" -oG "$results/hostdiscovery5.gnmap" &>/dev/null
-        [ -e "$results/hostdiscovery5.gnmap" ] && cat "$results/hostdiscovery5.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
-
-        echo -e "${BLUEBG}6. Nmap UDP Ping Scan $1 ${NC}"
-        nmap -sn -PU -iL "$input_file" -oG "$results/hostdiscovery6.gnmap" &>/dev/null
-        [ -e "$results/hostdiscovery6.gnmap" ] && cat "$results/hostdiscovery6.gnmap" | grep Host | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
+    # Consolidated Nmap Scan
+    # -sn: Ping Scan (No Port Scan)
+    # -PE/PS/PA/PU: ICMP Echo, TCP SYN/ACK, UDP Probes
+    # -n: No DNS resolution (faster)
+    # --min-rate: Speed optimization
+    nmap -sn -PE -PS443 -PA80 -PU53 -PP -n --min-rate 1000 -iL "$input_file" -oG "$results/hostdiscovery.gnmap" >/dev/null 2>&1
+    
+    ui_stop_spinner
+    
+    # Process Results
+    if [ -e "$results/hostdiscovery.gnmap" ]; then
+        cat "$results/hostdiscovery.gnmap" | grep "Status: Up" | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
     fi
 
-    rm $results/hostdiscovery*.gnmap &>/dev/null
+    local alive_count=$(wc -l < "$results/aliveip.txt" 2>/dev/null || echo 0)
+    ui_print_result_item "Alive Hosts" "$results/aliveip.txt" "$alive_count"
+    ui_step_end
 
-    # Remove the temporary input file if it was created
-    if [ -f "$1" ]; then
-        cp $1 $results
+    # Cleanup
+    rm "$results/hostdiscovery.gnmap" 2>/dev/null
+    [ "$input_file" == "/tmp/hostdiscovery_input.txt" ] && rm "$input_file" 2>/dev/null
+    
+    # Backup input if file
+    if [ -f "$1" ] && [ "$1" != "$results/aliveip.txt" ]; then
+        cp "$1" "$results/" 2>/dev/null
     fi
 }
 nmapdiscovery(){
@@ -93,26 +88,34 @@ nmapdiscovery(){
         exit 1
     fi
 
-    [[ -f "$casn" ]] && echo "CIDR File" && hostdiscovery $casn
- 
-   # Check if it's a valid CIDR
+    # Check if it's a valid CIDR
     if is_cidr "$casn"; then
-        echo "CIDR notation: $casn"
+        ui_step_start "CIDR Scan" "Target: $casn"
         [[ ! -e $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
+        ui_step_end
     fi
+    
     # Check if it's a valid ASN
     if is_asn "$casn"; then
-        echo -e "ASN: $casn \n"
-        [ ! -f "$casn" ] && echo -e "${BLUE}[#] asnmap -a $casn -silent | anew -q $results/asnip.txt ${NC}"
-        [ ! -f "$casn" ] && asnmap -a $casn -silent | anew -q $results/asnip.txt
-        [ ! -f "$casn" ] && echo -e "${BLUE}[#] whois -h whois.radb.net -- \"-i origin $casn\" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo '([0-9.]+){4}/[0-9]+' | anew -q $results/asnip.txt${NC}"
-        [ ! -f "$casn" ] && whois -h whois.radb.net -- "-i origin $casn" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo "([0-9.]+){4}/[0-9]+" | anew -q "$results/asnip.txt"
-        [ -e "$results/asnip.txt" ] && cat $results/asnip.txt
-        [ -e "$results/asnip.txt" ] && cat $results/asnip.txt | while IFS= read -r cidr; do hostdiscovery $cidr; done
+        ui_step_start "ASN Scan" "Target: $casn (Enumerating prefixes)"
+        ui_start_spinner "Resolving ASN to CIDRs..."
+        
+        # Resolve ASN to CIDRs
+        [ ! -f "$casn" ] && asnmap -a $casn -silent | anew -q $results/asnip.txt >/dev/null 2>&1
+        [ ! -f "$casn" ] && whois -h whois.radb.net -- "-i origin $casn" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo "([0-9.]+){4}/[0-9]+" | anew -q "$results/asnip.txt" >/dev/null 2>&1
+        
+        ui_stop_spinner
+        
+        local cidr_count=$(wc -l < "$results/asnip.txt" 2>/dev/null || echo 0)
+        ui_print_result_item "CIDRs Found" "$results/asnip.txt" "$cidr_count"
+        ui_step_end
+        
+        # Scan found CIDRs
         if [ -e "$results/asnip.txt" ]; then
-          while IFS= read -r cidr; do
-            [[ ! -e $results/aliveip.txt || $rerun == true ]] && hostdiscovery $casn
-          done < "$results/asnip.txt"
+            ui_print_info "Scanning identified CIDRs..."
+            while IFS= read -r cidr; do
+                [[ ! -e $results/aliveip.txt || $rerun == true ]] && hostdiscovery $cidr
+            done < "$results/asnip.txt"
         fi
     fi
 }   

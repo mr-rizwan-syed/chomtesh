@@ -28,8 +28,8 @@ full_nuclei(){
 xsscan(){
     [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${YELLOW}"[*] Initiating XSS Scan"${NC}
     [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BLUE}"[#] cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt"${NC}
-    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_reults.txt
-    [[ -s $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BOLD}${GREEN}"XSS Scan Result: [$(cat $enumscan/xss_reults.txt | wc -l)] [$enumscan/xss_reults.txt]"${NC}
+    [[ ! -e $enumscan/xss_results.txt || $rerun == true ]] && cat $enumscan/URLs/paramurl.txt | dalfox pipe -o $enumscan/xss_results.txt
+    [[ -s $enumscan/xss_results.txt || $rerun == true ]] && echo -e ${BOLD}${GREEN}"XSS Scan Result: [$(cat $enumscan/xss_results.txt | wc -l)] [$enumscan/xss_results.txt]"${NC}
 }
 
 function enumVuln(){
