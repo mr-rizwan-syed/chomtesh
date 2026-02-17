@@ -20,13 +20,13 @@ shodunbanner(){
 }
 
 api_check() {
-    SHODAN_API_KEY=$(grep 'SHODAN_API_KEY: ' config.yml | awk -F'[][]' '{print $2}' | xargs)
+    SHODAN_API_KEY=$(grep 'SHODAN_API_KEY: ' "$SCRIPT_DIR/config.yml" | awk -F'[][]' '{print $2}' | xargs)
 
     if [ -z "$SHODAN_API_KEY" ]; then
         printf "\n${redbg} No Premium Shodan API key found. Make sure you store the API key in config.yml file ${NC}\n\n"
         exit 0
     else
-        shodan init "$SHODAN_API_KEY" &> /dev/null
+        shodan init "$SHODAN_API_KEY" 2>$ERR_LOG >/dev/null
     fi
 }
 
@@ -40,14 +40,14 @@ dork(){
     shodan stats --facets ssl.cert.fingerprint ssl.cert.subject.commonName:"*.${target}"|grep -Eo "[[:xdigit:]]{40}"|grep -v "^[[:blank:]]*$" | anew -q $shodanresults/fingerprints.txt;sleep 2
 
     cat $shodanresults/fingerprints.txt | while read -r line;do echo "ssl_SHA1_${line}::ssl.cert.fingerprint:\"$line\"";done | anew -q $shodanresults/targetdork.txt && rm $shodanresults/fingerprints.txt
-    sed "s/\$targetdomain/$target/g" ./MISC/shodan_dorks.txt | anew -q $shodanresults/targetdork.txt
+    sed "s/\$targetdomain/$target/g" "$MISC_DIR/shodan_dorks.txt" | anew -q $shodanresults/targetdork.txt
 }
 
 count(){
     echo -e "${bluebg}Counting Shodan Results${NC}"
     result_count=$(
         cat "$shodanresults/targetdork.txt" | while IFS='::' read a b c; do
-            z=$(shodan count "${c}" 2> /dev/null; sleep 2)
+            z=$(shodan count "${c}" 2>$ERR_LOG; sleep 2)
             printf "${a} ${z}\n"
         done | awk '{ if ($NF > 0) print $1 " " $NF }' | sed 's/ /,|,/g' | column -s ',' -t
     )
@@ -125,16 +125,16 @@ favicons(){
     [[ -s $shodanresults/favicons_${target}.txt ]] && cat $shodanresults/favicons_${target}.txt | httpx -silent -favicon | anew -q $shodanresults/favicons_hashes${target}.txt
 
     echo -e "${bluebg}Technology Detection of Favicon Hash${NC} >> $shodanresults/favicons_hash_tech_${target}.txt"
-    [[ -s $shodanresults/favicons_hashes${target}.txt ]] && cat $shodanresults/favicons_${target}.txt | nuclei -t MISC/favicon-detect.yaml | anew -q $shodanresults/favicons_hash_tech_${target}.txt
+    [[ -s $shodanresults/favicons_hashes${target}.txt ]] && cat $shodanresults/favicons_${target}.txt | nuclei -t "$MISC_DIR/favicon-detect.yaml" | anew -q $shodanresults/favicons_hash_tech_${target}.txt
 }
 
 asn(){
     echo -e "${bluebg}ASN [ Autonomous System Lookup (AS / ASN / IP) ]${NC}"
-    asn=$(zcat $shodanresults/Collect/*.json.gz | jq -r 'select(.asn != null)|.asn' 2> /dev/null | sort -u)
-	printf "${asn}\n" | while read -r asnline; do
-		name=$(host -t TXT "${asnline}.asn.cymru.com" | grep -v "NXDOMAIN" | awk -F'|' 'NR==1{print substr($NF,2,length($NF)-2)}')
-		echo $name | sort -u | anew -q $shodanresults/asn_${target}.txt
-	done
+    asn=$(zcat $shodanresults/Collect/*.json.gz | jq -r 'select(.asn != null)|.asn' 2>$ERR_LOG | sort -u)
+    printf "${asn}\n" | while read -r asnline; do
+        name=$(host -t TXT "${asnline}.asn.cymru.com" | grep -v "NXDOMAIN" | awk -F'|' 'NR==1{print substr($NF,2,length($NF)-2)}')
+        echo $name | sort -u | anew -q $shodanresults/asn_${target}.txt
+    done
 }
 
 shodun(){

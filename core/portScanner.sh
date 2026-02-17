@@ -6,16 +6,16 @@
 # Function to extract naabu results
 function naabuextract(){
     # Convert JSON to CSV if needed
-    [[ ! -e $naabuout.csv || $rerun == true ]] && python3 ./core/naabu_json2csv.py $naabuout.json $naabuout.csv 2>/dev/null
+    [[ ! -e $naabuout.csv || $rerun == true ]] && python3 "$CORE_DIR/naabu_json2csv.py" $naabuout.json $naabuout.csv 2>/dev/null
     
     # Extract Alive IPs
-    cat $naabuout.json 2>/dev/null | jq -r 'select(.cdn == null) | "\(.ip)"' | anew $aliveip -q 2>/dev/null
+    cat "$naabuout.json" 2>/dev/null | jq -r 'select(.cdn == null) | "\(.ip)"' | anew -q "$aliveip"
     
     # Extract IP:Port
-    cat $naabuout.json 2>/dev/null | jq -r 'select(.cdn == null) | "\(.ip):\(.port)"' | anew $ipport -q 2>/dev/null
+    cat "$naabuout.json" 2>/dev/null | jq -r 'select(.cdn == null) | "\(.ip):\(.port)"' | anew -q "$ipport"
     
     # Extract Host:Port
-    cat $naabuout.json 2>/dev/null | jq -r '"\(.host):\(.port)"' | grep -v null | anew $hostport -q 2>/dev/null
+    cat "$naabuout.json" 2>/dev/null | jq -r '"\(.host):\(.port)"' | grep -v null | anew -q "$hostport"
 }
 
 function portscanner(){
@@ -51,10 +51,9 @@ function portscanner(){
     ui_print_cmd "${SYM_INFO} Cmd: $scan_cmd"
     
     # Special case: HostPort Scan (Skip Naabu if list exists)
-    if [[ $hostportscan == true ]] && [ -f "$target" ] && [ -e "$hostportlist" ]; then
+    if [[ "$hostportscan" == true ]] && [ -f "$target" ] && [ -e "$hostportlist" ]; then
         ui_print_info "Skipping Naabu, importing $hostportlist..."
-        declared_paths
-        cat "$hostportlist" | cut -d : -f 1 | anew "$aliveip" -q 2>/dev/null
+        cat "$hostportlist" | cut -d : -f 1 | anew -q "$aliveip" 2>$ERR_LOG
     
     elif [ -f "$naabuout.json" ] && [ "$rerun" != true ]; then
         ui_print_info "Existing results found. Skipping scan."

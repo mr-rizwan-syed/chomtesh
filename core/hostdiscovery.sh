@@ -56,24 +56,54 @@ hostdiscovery() {
 
     # Consolidated Nmap Scan
     # -sn: Ping Scan (No Port Scan)
-    # -PE/PS/PA/PU: ICMP Echo, TCP SYN/ACK, UDP Probes
+    # Aggressive Discovery Probes:
+    # -PE/PP/PM: ICMP Echo, Timestamp, and Netmask Request
+    # -PS/PA: TCP SYN/ACK on common ports
+    # -PU: UDP Probes on common ports
+    # -PO: IP Protocol Ping
     # -n: No DNS resolution (faster)
     # --min-rate: Speed optimization
-    nmap -sn -PE -PS443 -PA80 -PU53 -PP -n --min-rate 1000 -iL "$input_file" -oG "$results/hostdiscovery.gnmap" >/dev/null 2>&1
+    nmap -sn -PE -PP -PM -PS21,22,23,25,53,80,110,143,443,445,3306,3389,8080 -PA80,443,445 -PU53,161 -PO1,2,6,17 -n --min-rate 1000 -iL "$input_file" -oG "$results/hostdiscovery.gnmap" 2>$ERR_LOG >/dev/null
     
     ui_stop_spinner
     
-    # Process Results
+    # Process Nmap Results
     if [ -e "$results/hostdiscovery.gnmap" ]; then
         cat "$results/hostdiscovery.gnmap" | grep "Status: Up" | cut -d ' ' -f 2 | anew -q "$results/aliveip.txt"
     fi
 
+    # Naabu Port-based Discovery (No-Ping Scan)
+    # This ensures we don't miss hosts where ICMP and common ping probes are blocked
+    ui_step_start "No-Ping Scan" "Naabu port discovery on top 100 ports"
+    ui_start_spinner "Scanning for alternative live hosts..."
+    
+    naabu -iL "$input_file" -top-ports 100 -silent -nmap-cli "-n --min-rate 1000" -o "$results/naabu_temp.txt" 2>$ERR_LOG >/dev/null
+    
+    ui_stop_spinner
+
+    # Process Naabu Results
+    if [ -s "$results/naabu_temp.txt" ]; then
+        # Extract IPs for aliveip.txt
+        cat "$results/naabu_temp.txt" | cut -d ':' -f 1 | anew -q "$results/aliveip.txt"
+        
+        # Save IP:Port findings as requested
+        # We put it to hostport.txt as typically used in this framework's context
+        cat "$results/naabu_temp.txt" | anew -q "$results/hostport.txt"
+        cat "$results/naabu_temp.txt" | anew -q "$results/ipport.txt"
+    fi
+
     local alive_count=$(wc -l < "$results/aliveip.txt" 2>/dev/null || echo 0)
-    ui_print_result_item "Alive Hosts" "$results/aliveip.txt" "$alive_count"
+    ui_print_result_item "Total Alive Hosts" "$results/aliveip.txt" "$alive_count"
+    
+    if [ -s "$results/hostport.txt" ]; then
+        local hp_count=$(wc -l < "$results/hostport.txt" 2>/dev/null || echo 0)
+        ui_print_result_item "Hosts with Ports" "$results/hostport.txt" "$hp_count"
+    fi
+    
     ui_step_end
 
     # Cleanup
-    rm "$results/hostdiscovery.gnmap" 2>/dev/null
+    rm "$results/hostdiscovery.gnmap" "$results/naabu_temp.txt" 2>/dev/null
     [ "$input_file" == "/tmp/hostdiscovery_input.txt" ] && rm "$input_file" 2>/dev/null
     
     # Backup input if file
@@ -101,8 +131,8 @@ nmapdiscovery(){
         ui_start_spinner "Resolving ASN to CIDRs..."
         
         # Resolve ASN to CIDRs
-        [ ! -f "$casn" ] && asnmap -a $casn -silent | anew -q $results/asnip.txt >/dev/null 2>&1
-        [ ! -f "$casn" ] && whois -h whois.radb.net -- "-i origin $casn" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo "([0-9.]+){4}/[0-9]+" | anew -q "$results/asnip.txt" >/dev/null 2>&1
+        [ ! -f "$casn" ] && asnmap -a $casn -silent | anew -q $results/asnip.txt 2>$ERR_LOG >/dev/null
+        [ ! -f "$casn" ] && whois -h whois.radb.net -- "-i origin $casn" | grep route: | cut -d ':' -f 2 | tr -d ' ' | grep -Eo "([0-9.]+){4}/[0-9]+" | anew -q "$results/asnip.txt" 2>$ERR_LOG >/dev/null
         
         ui_stop_spinner
         

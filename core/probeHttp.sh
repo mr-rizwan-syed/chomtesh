@@ -7,7 +7,7 @@
 function httpprobing(){
   webtechcheck(){
     urlprobed=$1 webtech=$2
-    wappscan -update &>/dev/null 2>&1
+    wappscan -update 2>$ERR_LOG >/dev/null
     ui_print_header "WEBTECH CHECK (WAPPSCAN)"
     
     local wapp_cmd="wappscan -l $urlprobed $wappscan_flags -json -o $webtech"
@@ -17,8 +17,8 @@ function httpprobing(){
     ui_box_command "Wappscan" "$wapp_cmd"
     
     # Run wappscan
-    [[ ! -e $webtech && ! -e $urlprobed-new || $rerun == true ]] && wappscan -l $urlprobed $wappscan_flags -json -o $webtech 2>/dev/null
-    [[ -e $urlprobed-new || $rerun == true ]] && wappscan -l $urlprobed-new $wappscan_flags -json -o $webtech 2>/dev/null
+    [[ ! -e $webtech && ! -e $urlprobed-new || $rerun == true ]] && wappscan -l $urlprobed $wappscan_flags -json -o $webtech 2>$ERR_LOG
+    [[ -e $urlprobed-new || $rerun == true ]] && wappscan -l $urlprobed-new $wappscan_flags -json -o $webtech 2>$ERR_LOG
     echo "" # Spacer
     ui_print_success "WebTechCheck Scan Completed"
   }
@@ -35,11 +35,11 @@ function httpprobing(){
   else
     local httpx_cmd="echo $hostlist | httpx $httpx_flags -csvo utf-8 -o $httpxout -oa"
     ui_box_command "HTTPX" "$httpx_cmd"
-    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx $httpx_flags -csv -csvo utf-8 -o $httpxout -oa 2>/dev/null
+    [[ ! -e $httpxout || $rerun == true ]] && echo $hostlist | httpx $httpx_flags -csv -csvo utf-8 -o $httpxout -oa 2>$ERR_LOG
   fi
 
   if [[ ${ipscan} == true ]] || [[ ${hostportscan} == true ]] || [[ ${casnscan} == true ]];then
-      cat $results/httpx*.json | jq -r '.url' 2>/dev/null | anew -q $urlprobed
+      cat $results/httpx*.json | jq -r '.url' 2>$ERR_LOG | anew -q $urlprobed
       urlpc=$(<$urlprobed wc -l)
       
       local results_data=()
@@ -55,7 +55,7 @@ function httpprobing(){
   fi
   
   if [[ ${domainscan} == true ]];then
-      cat $results/httpx*.json | jq -r '.url' 2>/dev/null | anew -q $urlprobed
+      cat $results/httpx*.json | jq -r '.url' 2>$ERR_LOG | anew -q $urlprobed
       urlpc=$(<$urlprobed wc -l)
       
       local results_data=()

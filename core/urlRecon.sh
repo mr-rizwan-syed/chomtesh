@@ -14,38 +14,38 @@ recon_url(){
     passivereconurl(){
         # Extract subdomains
         if [ ! -e "$urlprobedsd" ] || [ "$rerun" == true ]; then 
-            cat "$urlprobed" | awk -F[/:] '{print $4}' | sort -u | anew -q "$urlprobedsd" &>/dev/null
+            cat "$urlprobed" | awk -F[/:] '{print $4}' | sort -u | anew -q "$urlprobedsd" 2>$ERR_LOG
         fi
         
         # Gau - Passive Recon
         if [ ! -e "$enumscan/URLs/gau-allurls.txt" ] || [ "$rerun" == true ]; then
-            cat "$urlprobedsd" | gau --threads 10 2>/dev/null | anew "$enumscan/URLs/gau-allurls.txt" >/dev/null
+            cat "$urlprobedsd" | gau 2>$ERR_LOG | anew -q "$enumscan/URLs/gau-allurls.txt"
         fi
         
         # Subjs - Passive Recon
         if [ ! -e "$enumscan/URLs/subjs-allurls.txt" ] || [ "$rerun" == true ]; then
-             cat "$urlprobed" | subjs 2>/dev/null | anew "$enumscan/URLs/subjs-allurls.txt" >/dev/null
+             cat "$urlprobed" | subjs 2>$ERR_LOG | anew -q "$enumscan/URLs/subjs-allurls.txt"
         fi
     }
 
     activereconurl(){
         if [ ! -e "$enumscan/URLs/katana-allurls.txt" ] || [ "$rerun" == true ]; then
-            katana -list "$urlprobed" $katana_flags 2>/dev/null | anew "$enumscan/URLs/katana-allurls.txt" >/dev/null
+            katana -list "$urlprobed" $katana_flags 2>$ERR_LOG | anew -q "$enumscan/URLs/katana-allurls.txt"
         fi
     }
 
     pot_url(){
-        ([ ! -e $enumscan/URLs/potentialurls.txt ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | gf excludeExt | anew $enumscan/URLs/potentialurls.txt -q &>/dev/null 2>&1
-        ([ ! -e $enumscan/URLs/paramurl.txt ] || [ "$rerun" == true ]) && cat $enumscan/URLs/potentialurls.txt | qsinject -c MISC/qs-rules.yaml 2>/dev/null | anew $enumscan/URLs/paramurl.txt -q &>/dev/null
+        ([ ! -e "$enumscan/URLs/potentialurls.txt" ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | gf excludeExt 2>$ERR_LOG | anew -q "$enumscan/URLs/potentialurls.txt"
+        ([ ! -e "$enumscan/URLs/paramurl.txt" ] || [ "$rerun" == true ]) && cat "$enumscan/URLs/potentialurls.txt" | qsinject -c "$MISC_DIR/qs-rules.yaml" 2>$ERR_LOG | anew -q "$enumscan/URLs/paramurl.txt"
     }
 
     jsextractor(){
-        ([ ! -e $enumscan/URLs/alljsurls.txt ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew $enumscan/URLs/alljsurls.txt -q &>/dev/null 2>&1
+        ([ ! -e "$enumscan/URLs/alljsurls.txt" ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | egrep -iv '\.json' | grep -iE "\.js$" | anew -q "$enumscan/URLs/alljsurls.txt"
     }
 
     validjsurlextractor(){
         if [ ! -e "$enumscan/URLs/validjsurls.txt" ] || [ "$rerun" == true ]; then
-            httpx -l "$enumscan/URLs/alljsurls.txt" -mc 200 -silent 2>/dev/null | anew "$enumscan/URLs/validjsurls.txt" >/dev/null
+            httpx -l "$enumscan/URLs/alljsurls.txt" -mc 200 -silent 2>$ERR_LOG | anew -q "$enumscan/URLs/validjsurls.txt"
         fi
     }
 
@@ -53,26 +53,56 @@ recon_url(){
         mkdir -p "$enumscan/URLs/JSLeak"
         
         if [ ! -e "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" ] || [ "$rerun" == true ]; then
-            cat "$enumscan/URLs/validjsurls.txt" | jsleak -s > "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" 2>/dev/null
+            cat "$enumscan/URLs/validjsurls.txt" | jsleak -s > "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" 2>$ERR_LOG
         fi
         
         if [ ! -e "$enumscan/URLs/JSLeak/jsleak_link_output.txt" ] || [ "$rerun" == true ]; then
-            cat "$enumscan/URLs/validjsurls.txt" | jsleak -l -c 30 > "$enumscan/URLs/JSLeak/jsleak_link_output.txt" 2>/dev/null
+            cat "$enumscan/URLs/validjsurls.txt" | jsleak -l -c 30 > "$enumscan/URLs/JSLeak/jsleak_link_output.txt" 2>$ERR_LOG
         fi
 
         # Parse Secrets
-        grep "\[" "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" | sort -u | anew "$enumscan/URLs/secretsfromjs.txt" >/dev/null
-
+        grep "\[" "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" | sort -u | anew -q "$enumscan/URLs/secretsfromjs.txt"
+ 
         # Parse Endpoints
-        cat "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -u | anew "$enumscan/URLs/endpointsfromjs.txt" >/dev/null
+        cat "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -u | anew -q "$enumscan/URLs/endpointsfromjs.txt"
+
+        # Extract links from JSLeak and validate with httpx
+        if [ -s "$enumscan/URLs/JSLeak/jsleak_link_output.txt" ]; then
+            # Format: [+] Found link: [URL] in [FILE]
+            # Extract content of first brackets
+            local jsleak_raw_links="/tmp/jsleak_raw_links.txt"
+            sed -n 's/.*Found link: \[\([^]]*\)\].*/\1/p' "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -u > "$jsleak_raw_links"
+            
+            # Filter full URLs and relative paths
+            local jsleak_js_links="/tmp/jsleak_js_links.txt"
+            local jsleak_other_links="/tmp/jsleak_other_links.txt"
+            
+            # Full URLs ending in .js (with optional query params)
+            grep -iE "^https?://.*\.js(\?.*)?$" "$jsleak_raw_links" > "$jsleak_js_links"
+            
+            # Everything else (Non-JS full URLs OR Relative paths)
+            grep -ivE "^https?://.*\.js(\?.*)?$" "$jsleak_raw_links" > "$jsleak_other_links"
+
+            # Validate full JS URLs and add to validjsurls.txt
+            if [ -s "$jsleak_js_links" ]; then
+                httpx -l "$jsleak_js_links" -mc 200 -silent 2>$ERR_LOG | anew "$enumscan/URLs/validjsurls.txt" >/dev/null
+            fi
+            
+            # Add other links to endpointsfromjs.txt
+            if [ -s "$jsleak_other_links" ]; then
+                anew -q "$enumscan/URLs/endpointsfromjs.txt" < "$jsleak_other_links"
+            fi
+            
+            rm "$jsleak_raw_links" "$jsleak_js_links" "$jsleak_other_links" 2>$ERR_LOG
+        fi
     }
 
     wordsfromjsextractor(){
-        ([ ! -e $enumscan/URLs/wordsfromjs.txt ] || [ "$rerun" == true ]) && cat $enumscan/URLs/validjsurls.txt | python3 ./MISC/getjswords.py 2>/dev/null | anew -q $enumscan/URLs/wordsfromjs.txt 2>/dev/null
+        ([ ! -e $enumscan/URLs/wordsfromjs.txt ] || [ "$rerun" == true ]) && cat $enumscan/URLs/validjsurls.txt | python3 "$MISC_DIR/getjswords.py" 2>$ERR_LOG | anew -q $enumscan/URLs/wordsfromjs.txt 2>$ERR_LOG
     }
 
     varjsurlsextractor(){
-        ([ ! -e $enumscan/URLs/varfromjs.txt ] || [ "$rerun" == true ]) && interlace --silent -tL $enumscan/URLs/validjsurls.txt -c "bash ./MISC/jsvar.sh _target_ 2>/dev/null | anew -q $enumscan/URLs/varfromjs.txt" 2>/dev/null
+        ([ ! -e $enumscan/URLs/varfromjs.txt ] || [ "$rerun" == true ]) && interlace --silent -tL $enumscan/URLs/validjsurls.txt -c "bash \"$MISC_DIR/jsvar.sh\" _target_ 2>$ERR_LOG | anew -q $enumscan/URLs/varfromjs.txt" 2>$ERR_LOG
     }
 
     # --- Phase 1: URL Gathering ---
@@ -80,9 +110,9 @@ recon_url(){
         ui_step_start "URL Discovery" ""
         ui_print_box_line "${C_DIM}Running Passive (Gau, Subjs) & Active (Katana) scans parallelly${C_RESET}"
         ui_print_box_line "${C_NEON_YELLOW}${SYM_CMD} ${C_WHITE}Command:${C_RESET}"
-        ui_print_cmd "${SYM_INFO} gau --threads 10 ..."
-        ui_print_cmd "${SYM_INFO} subjs ..."
-        ui_print_cmd "${SYM_INFO} katana -list $urlprobed $katana_flags ..."
+        ui_print_cmd "${SYM_INFO} gau --threads 10"
+        ui_print_cmd "${SYM_INFO} subjs"
+        ui_print_cmd "${SYM_INFO} katana -list $urlprobed $katana_flags"
         
         ui_start_spinner "Enumerating URLs from $(wc -l < "$urlprobed") sources"
         
@@ -171,6 +201,10 @@ recon_url(){
         ui_print_result_item "Words Extracted" "$enumscan/URLs/wordsfromjs.txt" "$word_count"
         ui_print_result_item "Vars Extracted" "$enumscan/URLs/varfromjs.txt" "$var_count"
         
+        # Updated Count after JSLeak Scan
+        updated_valid_js_count=$(wc -l < "$enumscan/URLs/validjsurls.txt" 2>/dev/null || echo 0)
+        ui_print_result_item "Updated Valid JS (after jsleak scan)" "$enumscan/URLs/validjsurls.txt" "$updated_valid_js_count"
+        
         ui_step_end
     fi
 }
@@ -180,12 +214,14 @@ xnl(){
     mkdir -p "$enumscan/URLs"
 
     # Fix for Config Path
-    WAYMORE_CONFIG_FILE="config.yml"
+    WAYMORE_CONFIG_FILE="$SCRIPT_DIR/config.yml"
     if [ -f "$WAYMORE_CONFIG_FILE" ]; then
         URLSCAN_API_KEY=$(grep "URLSCAN_API_KEY:" "$WAYMORE_CONFIG_FILE" | awk -F'[][]' '{print $2}')
-        # Ensure we are editing the correct file or a copy if needed. 
-        # Assuming in-place edit is fine for now as per original script logic.
-        sed -i "s/URLSCAN_API_KEY:.*/URLSCAN_API_KEY: $URLSCAN_API_KEY/" "$WAYMORE_CONFIG_FILE"
+        # Instead of sed -i, we can pass to waymore via env or local config if supported, 
+        # but if we must use Waymore's default, we ensure we reference it correctly.
+        # Original script was doing: sed -i "s/URLSCAN_API_KEY:.*/URLSCAN_API_KEY: $URLSCAN_API_KEY/" "$WAYMORE_CONFIG_FILE"
+        # Recommendation was to avoid destructive edits. If URLSCAN_API_KEY is already there, maybe we don't need sed.
+        :
     else
         ui_print_error "Waymore config.yml not found at $WAYMORE_CONFIG_FILE"
     fi
@@ -196,7 +232,7 @@ xnl(){
     
     # Define commands for display
     local waymore_cmd="waymore -i $domain -mode B -oU $enumscan/URLs/waymore.txt -oR $enumscan/URLs/waymoreResponses/"
-    local xnl_cmd="xnLinkFinder -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o ...params.txt -owl ...wordlist.txt"
+    local xnl_cmd="xnLinkFinder -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o $enumscan/URLs/xnLinkFinder_links.txt -op $enumscan/URLs/xnLinkFinder_parameters.txt -owl $enumscan/URLs/xnLinkFinder_wordlist.txt"
     local hog_cmd="trufflehog filesystem $enumscan/URLs/waymoreResponses --only-verified"
 
     # Print all commands upfront (or as they run? user asked for upfront or indented under [#] Command)

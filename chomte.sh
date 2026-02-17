@@ -24,8 +24,10 @@ cross=$(printf '\u2718')
 upper="${lightblue}╔$(printf '%.0s═' $(seq "80"))╗${end}"
 lower="${lightblue}╚$(printf '%.0s═' $(seq "80"))╝${end}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-core="$SCRIPT_DIR/core"
+export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export CORE_DIR="$SCRIPT_DIR/core"
+export MISC_DIR="$SCRIPT_DIR/MISC"
+core="$CORE_DIR"
 ORIGINAL_ARGS=("$@")
 
 # for script_file in "$core"/*.sh; do
@@ -53,22 +55,31 @@ source $core/report.sh
 should_run() { [[ ! -e "$1" || "$rerun" == true ]]; }
 
 log_debug() {
-  local logfile="${results:-/tmp}/debug.log"
+  local logfile="$results/debug.log"
   echo "[$(date '+%H:%M:%S')] $*" >> "$logfile"
 }
 
-# --- Flag Parsing ---
+# Redirect stderr based on verbosity
+if [[ "$verbose" == true ]]; then
+    export ERR_LOG="/dev/stderr"
+    ui_print_info "Verbose mode enabled. Tool errors will be shown."
+else
+    export ERR_LOG="/dev/null"
+fi
+
+# --- Flag Parsing & Tool Resources ---
+RES_DIR="/root/.dmut" # Directory for tool resources (resolvers, wordlists)
 FLAGS_CONF="$SCRIPT_DIR/flags.conf"
 parse_flag() { grep "^$1=" "$FLAGS_CONF" | cut -d= -f2-; }
 
 subfinder_flags=$(parse_flag subfinder_flags)
-dmut_flags=$(parse_flag dmut_flags)
-naabu_flags=$(parse_flag naabu_flags)
-httpx_flags=$(parse_flag httpx_flags)
+dmut_flags=$(parse_flag dmut_flags | sed "s|MISC/|$MISC_DIR/|g; s|/root/.dmut|$RES_DIR|g")
+naabu_flags=$(parse_flag naabu_flags | sed "s|/root/.dmut|$RES_DIR|g")
+httpx_flags=$(parse_flag httpx_flags | sed "s|/root/.dmut|$RES_DIR|g")
 wappscan_flags=$(parse_flag wappscan_flags)
 nmap_flags=$(parse_flag nmap_flags)
 dirsearch_flags=$(parse_flag dirsearch_flags)
-dnsx_flags=$(parse_flag dnsx_flags)
+dnsx_flags=$(parse_flag dnsx_flags | sed "s|/root/.dmut|$RES_DIR|g")
 nuclei_flags=$(parse_flag nuclei_flags)
 katana_flags=$(parse_flag katana_flags)
 
@@ -143,6 +154,7 @@ print_usage() {
   echo "       -ru  | --reconurl               : URL Recon; applicable with enum -e flag"
   echo "       -ex  | --enumxnl                : XNL JS Recon; applicable with enum -e flag"  
   echo "       -nf  | --nucleifuzz             : Nuclei Fuzz; applicable with enum -e flag" 
+  echo "    -v   | --verbose                   : Enable verbose logging"
   echo "    -h   | --help                      : Show this help"
   echo "${NC}"
   exit
@@ -160,7 +172,7 @@ function domaindirectorycheck(){
     fi
 }
 
-required_tools=("pv" "go" "python3" "ccze" "git" "pip" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana")
+required_tools=("pv" "go" "python3" "ccze" "git" "pip" "knockknock" "subfinder" "naabu" "dnsx" "httpx" "csvcut" "csvstack" "dmut" "dirsearch" "ffuf" "nuclei" "nmap" "ansi2html" "xsltproc" "trufflehog" "anew" "interlace" "subjs" "katana" "gau" "gf" "qsinject" "jsleak" "waymore" "xnLinkFinder" "tlsx" "dalfox" "jq" "asnmap" "whois" "lolcat" "host")
 missing_tools=()
 for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
@@ -236,8 +248,8 @@ function phase_subdomain_enum() {
     [[ "$nosubdomainscan" == true && -f "$target" ]] && cat "$target" | anew -q "$results/subdomains.txt"
     
     # DNS Brute and Takeover
-    [[ "$dnsbrute" == true || "$alterx" == true ]] && dnsreconbrute "$target" "$results/dnsbruteout.txt"
-    [[ "$shodan" == true && ! -f "$target" ]] && shodun "$target" &
+    [[ "$dnsbrute" == true || "$alterx" == true || "$all" == true ]] && dnsreconbrute "$target" "$results/dnsbruteout.txt"
+    [[ ("$shodan" == true || "$all" == true) && ! -f "$target" ]] && shodun "$target" &
     
     # Subdomain Takeover (Explicit Request)
     [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && subdomaintakeover &
@@ -280,7 +292,7 @@ function phase_probing() {
         # Let's produce a JSON Array which is safer for "merge.json" naming.
         # Check if files exist to avoid jq errors.
         if ls "$results"/httpx*.json 1> /dev/null 2>&1; then
-             cat "$results"/httpx*.json | jq -s '.' > "$results/httpxmerge.json" 2>/dev/null
+             cat "$results"/httpx*.json | jq -s '.' > "$results/httpxmerge.json" 2>$ERR_LOG
         fi
     fi
     
@@ -321,7 +333,7 @@ function phase_probing() {
           fi
           
           if ls "$results"/httpx*.json 1> /dev/null 2>&1; then
-               cat "$results"/httpx*.json | jq -s '.' > "$results/httpxmerge.json" 2>/dev/null
+               cat "$results"/httpx*.json | jq -s '.' > "$results/httpxmerge.json" 2>$ERR_LOG
           fi
           
           [[ "$nmap" == "true" ]] && nmapscanner "$ipport" "$nmapscans"
@@ -336,14 +348,26 @@ function phase_probing() {
 }
 
 function phase_vulnerability_scan() {
+    # Consolidated Vulnerability Scanning Phase
+    ui_print_info "Starting Vulnerability Scanning Phase..."
+    
     [[ "$reconurl" == true || "$all" == true ]] && recon_url
     [[ "$enumxnl" == true && ! -f "$domain" || "$all" == true ]] && xnl
     
     # Active Recon (Nuclei Technology Scan)
     [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && active_recon
     
-    [[ "$vuln" == true ]] && enumVuln
-    [[ "$contentscan" == true || "$all" == true ]] && { [[ "$cdlist" ]] && content_discovery "$cdlist" || content_discovery "$potentialsdurls"; }
+    # Integrated Vulnerability Checks
+    [[ "$vuln" == true || "$all" == true ]] && enumVuln
+    
+    # Content Discovery
+    [[ "$contentscan" == true || "$all" == true ]] && {
+        if [[ -n "$cdlist" ]]; then
+            content_discovery "$cdlist"
+        else
+            content_discovery "$potentialsdurls"
+        fi
+    }
 }
 
 function rundomainscan(){
@@ -357,7 +381,7 @@ function rundomainscan(){
         
         phase_subdomain_enum "$domain"
         phase_probing
-        [[ $enum == true || "$all" == true ]] && phase_vulnerability_scan
+        [[ $enum == true || "$all" == true || $vuln == true ]] && phase_vulnerability_scan
 
     elif [[ -n "$domain" && -f "$domain" ]]; then
         # Domain List Mode
@@ -373,7 +397,7 @@ function rundomainscan(){
         
         phase_subdomain_enum "$results/targets.txt"
         phase_probing
-        [[ $enum == true || "$all" == true ]] && phase_vulnerability_scan
+        [[ "$enum" == true || "$all" == true || "$vuln" == true ]] && phase_vulnerability_scan
 
     elif [[ "$singledomain" == true && -n "$domain" ]]; then
         # Single Domain Mode
@@ -384,7 +408,7 @@ function rundomainscan(){
         
         # Skip subdomain enum
         phase_probing
-        [[ $enum == true || "$all" == true ]] && phase_vulnerability_scan
+        [[ "$enum" == true || "$all" == true || "$vuln" == true ]] && phase_vulnerability_scan
     fi
 }
 
@@ -445,6 +469,7 @@ function runcidrscan(){
   
   # Run active_recon if requested
   [[ "$enum" == true || "$vuln" == true || "$all" == true ]] && active_recon
+
   
   [[ $vuln == true || "$all" == true ]] && phase_vulnerability_scan
 }
@@ -577,6 +602,11 @@ while [[ $# -gt 0 ]]; do
     -td|--techdetect)
       tech="$2"
       techdetect=true
+      shift
+      ;;
+    -v|--verbose)
+      verbose=true
+      shift
       ;;
     -*|--*)
       echo "Unknown option $1"
@@ -592,7 +622,7 @@ done
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 if [[ $update == true ]];then
-	git pull origin main 2>/dev/null
+	git pull origin main 2>$ERR_LOG
   echo -e ${GREEN}Update Completed${NC} && exit 0
 elif [[ -z $1 ]]; then
     print_usage

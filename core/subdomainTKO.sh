@@ -33,7 +33,7 @@ function subdomaintakeover(){
       # 2. Subjack Takeover (CNAME)
       if [[ ! -e "$enumscan/subjack-takeover.txt" || "$rerun" == true ]]; then
            echo -e "${BLUE}[#] subjack -w $target_list -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json | anew $enumscan/subjack-takeover.txt ${NC}" 
-           subjack -w "$target_list" -t 100 -timeout 30 -ssl -c ./MISC/fingerprints.json -v 3 2>/dev/null | grep -v "Not Vulnerable" | anew "$enumscan/subjack-takeover.txt"
+           subjack -w "$target_list" -t 100 -timeout 30 -ssl -c "$MISC_DIR/fingerprints.json" -v 3 2>$ERR_LOG | grep -v "Not Vulnerable" | anew "$enumscan/subjack-takeover.txt"
       fi
   fi
 }

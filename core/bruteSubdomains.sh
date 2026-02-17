@@ -6,37 +6,69 @@
 
 function dnsreconbrute(){
   # DNS Subdomain Bruteforcing
-  domain=$1
-  dnsbruteout=$2
-  trap 'echo -e "${RED}Ctrl + C detected, Thats what she said${NC}"' SIGINT
-  total_sdc=$(cat $subdomains | wc -l)
-  echo -e "${GREEN}[$] Existing Subdomains Count${NC} [$total_sdc]"
-
-  [[ ! -e $dnsbruteout  || $rerun == true ]] && echo -e "${YELLOW}[*] DNSRecon: Bruteforcing Subdomains using DMUT ${NC}"
-  dmut --update-files &>/dev/null
-  [[ ! -e $dnsbruteout  || $rerun == true ]] && echo -e "${BLUE}[#] dmut -u $domain $dmut_flags -o $dnsbruteout ${NC}"
-  [[ ! -e $dnsbruteout  || $rerun == true ]] && dmut -u "$domain" $dmut_flags -o $dnsbruteout
+  local target="$1"
+  local dnsbruteout="$2"
   
-  [[ $alterx == true && ! -e $results/alterx_mutated.txt || $rerun == true ]] && echo -e "${YELLOW}[*] DNSRecon: Performing AlterX Bruteforcing using PureDNS ${NC}"
-  dmut --update-files &>/dev/null
-  [[ $alterx == true && ! -e $results/alterx_mutated.txt || $rerun == true ]] && echo -e "${BLUE}[#] cat $subdomains | alterx | anew -q $results/alterx_mutated.txt ${NC}"
-  [[ $alterx == true && ! -e $results/alterx_mutated.txt || $rerun == true ]] && cat $subdomains | alterx | anew -q $results/alterx_mutated.txt &>/dev/null 2>&1
-  [[ -s $results/alterx_mutated.txt ]] && alterx_mutated_count=$(cat $results/alterx_mutated.txt | wc -l)
-  [[ -s $results/alterx_mutated.txt ]] && echo -e "${GREEN}[$] AlterX Mutated Domains Generated${NC} [$alterx_mutated_count]"
-
-  [[ $alterx == true && ! -e $results/valid_domains.txt || $rerun == true ]] && echo -e "${BLUE}[#] puredns resolve $results/alterx_mutated.txt $domain -r /root/.dmut/resolvers.txt --wildcard-batch 1000 --write $results/valid_domains.txt --write-wildcards $results/wildcards.txt ${NC}"
-  [[ $alterx == true && ! -e $results/valid_domains.txt || $rerun == true ]] && puredns resolve $results/alterx_mutated.txt $domain -r /root/.dmut/resolvers.txt --wildcard-batch 1000 --write $results/valid_domains.txt --write-wildcards $results/wildcards.txt 2>/dev/null
-  [[ -s $results/valid_domains.txt ]] && cat $results/valid_domains.txt | anew -q $dnsbruteout &>/dev/null 2>&1
-
-  [[ -e $dnsbruteout ]] && grep -Fxvf $subdomains $dnsbruteout > $results/brutesubdomains.tmp
-  [[ -e $dnsbruteout ]] && dnsbrute_sdc=$(cat $dnsbruteout | wc -l)
-  [[ -e $dnsbruteout ]] && cat $dnsbruteout | anew -q $subdomains
-  [[ -e $results/brutesubdomains.tmp ]] && brute_sdc=$(cat $results/brutesubdomains.tmp | wc -l)
-  [[ -e $results/brutesubdomains.tmp ]] && cat $results/brutesubdomains.tmp | anew -q $subdomains
+  ui_print_header "DNS RECONNAISSANCE" "Bruteforcing Subdomains"
+  trap 'ui_handle_sigint' SIGINT
   
-  echo -e "${GREEN}[$] New Unique Subdomains found by DNS bruteforcing${NC} [$brute_sdc]"
-  [[ -s $results/valid_domains.txt ]] && puredns_count=$(cat $results/valid_domains.txt | wc -l) && echo -e "${GREEN}[$] PureDNS Resolved Valid Domains${NC} [$puredns_count]"
-  [[ -s $results/wildcards.txt ]] && wildcard_count=$(cat $results/wildcards.txt | wc -l) && echo -e "${GREEN}[$] Wildcard Domains Detected${NC} [$wildcard_count]"
-  total_sdc=$(cat $subdomains | wc -l)
-  echo -e "${GREEN}[$] Total Subdomains Enumerated${NC} [$total_sdc]"
+  local total_sdc=$(wc -l < "$subdomains" 2>/dev/null || echo 0)
+  ui_print_info "Existing Subdomains Count: $total_sdc"
+
+  # 1. DMUT Bruteforce
+  if [[ ! -e "$dnsbruteout" || "$rerun" == true ]] && [[ "$dnsbrute" == true || "$all" == true ]]; then
+      ui_step_start "DMUT Bruteforce" "dmut -u $target $dmut_flags -o $dnsbruteout"
+      dmut --update-files 2>$ERR_LOG >/dev/null
+      dmut -u "$target" $dmut_flags -o "$dnsbruteout" 2>$ERR_LOG
+      ui_step_end
+  elif [[ "$dnsbrute" == true || "$all" == true ]]; then
+      ui_print_info "DMUT results already exist, skipping."
+  fi
+  
+  # 2. AlterX Mutation & Resolution
+  if [[ "$alterx" == true || "$all" == true ]]; then
+      local alterx_mutated="$results/alterx_mutated.txt"
+      local valid_domains="$results/valid_domains.txt"
+      local wildcards="$results/wildcards.txt"
+      local resolvers="$RES_DIR/resolvers.txt"
+      
+      if [[ ! -e "$alterx_mutated" || "$rerun" == true ]]; then
+          ui_step_start "AlterX Mutation" "cat $subdomains | alterx | anew -q $alterx_mutated"
+          cat "$subdomains" | alterx 2>$ERR_LOG | anew -q "$alterx_mutated" >/dev/null
+          local mutation_count=$(wc -l < "$alterx_mutated" 2>/dev/null || echo 0)
+          ui_print_success "AlterX Mutated Domains Generated: $mutation_count"
+          ui_step_end
+      fi
+
+      if [[ -s "$alterx_mutated" ]] && [[ ! -e "$valid_domains" || "$rerun" == true ]]; then
+          ui_step_start "Domain Resolution (PureDNS)" "puredns resolve $alterx_mutated ..."
+          puredns resolve "$alterx_mutated" "$target" -r "$resolvers" --wildcard-batch 1000 --write "$valid_domains" --write-wildcards "$wildcards" 2>$ERR_LOG >/dev/null
+          
+          local valid_count=$(wc -l < "$valid_domains" 2>/dev/null || echo 0)
+          local wildcard_count=$(wc -l < "$wildcards" 2>/dev/null || echo 0)
+          
+          ui_print_success "Valid Domains Found    : $valid_count"
+          ui_print_success "Wildcards Detected     : $wildcard_count"
+          
+          # Add to main brute output
+          [ -s "$valid_domains" ] && cat "$valid_domains" | anew -q "$dnsbruteout"
+          ui_step_end
+      fi
+  fi
+
+  # 3. Consolidation
+  if [[ -e "$dnsbruteout" ]]; then
+      local brute_tmp="$results/brutesubdomains.tmp"
+      grep -Fxvf "$subdomains" "$dnsbruteout" > "$brute_tmp" 2>/dev/null
+      local new_brute_count=$(wc -l < "$brute_tmp" 2>/dev/null || echo 0)
+      
+      cat "$dnsbruteout" | anew -q "$subdomains"
+      [ -e "$brute_tmp" ] && cat "$brute_tmp" | anew -q "$subdomains"
+      
+      ui_print_success "New Unique Subdomains Found: $new_brute_count"
+      rm -f "$brute_tmp" 2>/dev/null
+  fi
+  
+  local final_sdc=$(wc -l < "$subdomains" 2>/dev/null || echo 0)
+  ui_print_info "Total Subdomains Now: $final_sdc"
 }

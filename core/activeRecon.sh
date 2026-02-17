@@ -17,13 +17,13 @@ function active_recon(){
 
     for tech in $detected_techs; do
         # 1. Validate against allowlist (mixed case allowed, match robustly)
-        if grep -F -q -x -i "$tech" "$SCRIPT_DIR/MISC/tech-list.tags"; then
+        if grep -F -q -x -i "$tech" "$MISC_DIR/tech-list.tags"; then
             
             # Check parallel job limit
             # count jobs that are running or stopped (to be safe)
             while [[ $(jobs -r | wc -l) -ge $MAX_JOBS ]]; do
                 # Wait for at least one job to finish before starting another
-                wait -n 2>/dev/null
+                wait -n 2>$ERR_LOG
             done
             
             # 2. Extract URLs
@@ -74,15 +74,15 @@ function active_recon(){
                     fi
 
                     local nuclei_cmd=""
-                    if [ -f "$workflow_file" ]; then
-                         nuclei_cmd="nuclei -l '$target_list' -w '$workflow_file' -o '$current_output'"
-                         ui_box_command "Nuclei: $tech [$scan_type]" "$nuclei_cmd"
-                         nuclei -l "$target_list" -w "$workflow_file" -o "$current_output" 2>/dev/null
-                    else
-                         nuclei_cmd="nuclei -l '$target_list' -tags '$tech' -o '$current_output'"
-                         ui_box_command "Nuclei: $tech [$scan_type]" "$nuclei_cmd"
-                         nuclei -l "$target_list" -tags "$tech" -o "$current_output" 2>/dev/null
-                    fi
+                     if [ -f "$workflow_file" ]; then
+                          nuclei_cmd="nuclei -l '$target_list' -w '$workflow_file' $nuclei_flags -o '$current_output'"
+                          ui_box_command "Nuclei: $tech [$scan_type]" "$nuclei_cmd"
+                          nuclei -l "$target_list" -w "$workflow_file" $nuclei_flags -o "$current_output" 2>$ERR_LOG
+                     else
+                          nuclei_cmd="nuclei -l '$target_list' -tags '$tech' $nuclei_flags -o '$current_output'"
+                          ui_box_command "Nuclei: $tech [$scan_type]" "$nuclei_cmd"
+                          nuclei -l "$target_list" -tags "$tech" $nuclei_flags -o "$current_output" 2>$ERR_LOG
+                     fi
                     
                     # Merge results if appending
                     if [ "$append_mode" = true ]; then
@@ -92,7 +92,7 @@ function active_recon(){
                              ui_print_success "$tech Incremental Scan: $new_res_count new results"
                              rm "$current_output"
                         fi
-                        rm "$target_list" 2>/dev/null
+                        rm "$target_list" 2>$ERR_LOG
                     else
                          if [ -e "$result_file" ]; then
                              local res_count=$(wc -l < "$result_file")

@@ -32,12 +32,16 @@ function getsubdomains(){
   # If it doesn't exist (fresh scan), we just populate output_file directly.
   # This avoids redundant httpx probing on "new" domains that are actually ALL domains.
   
-  if [ -s "$output_file" ]; then
-      : > "$new_subs_file"
-      subfinder "$subfinder_flag" "$target" $subfinder_flags 2>/dev/null | anew "$output_file" > "$new_subs_file"
+  if [ -s "$output_file" ] && [ "$rerun" != true ]; then
+      ui_print_info "Existing results found. Skipping passive enumeration."
   else
-      subfinder "$subfinder_flag" "$target" $subfinder_flags 2>/dev/null | anew "$output_file" > /dev/null
-      rm -f "$new_subs_file" 2>/dev/null # Ensure clean state
+      if [ -s "$output_file" ]; then
+          : > "$new_subs_file"
+          subfinder "$subfinder_flag" "$target" $subfinder_flags 2>$ERR_LOG | anew "$output_file" > "$new_subs_file"
+      else
+          subfinder "$subfinder_flag" "$target" $subfinder_flags 2>$ERR_LOG | anew "$output_file" > /dev/null
+          rm -f "$new_subs_file" 2>/dev/null # Ensure clean state
+      fi
   fi
 
   # Reporting

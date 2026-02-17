@@ -15,13 +15,13 @@ nuclei_fuzzer(){
 
     if [[ ! -e "$output_file" || "$rerun" == true ]]; then
         ui_step_start "Nuclei DAST (Fuzzing)" "nuclei -silent -dast -list $input_file"
-        nuclei -silent -dast -list "$input_file" | anew "$output_file"
+        nuclei -silent -dast -list "$input_file" 2>$ERR_LOG | anew "$output_file"
         ui_step_end
     fi
 
     if [ -s "$output_file" ]; then
         local count=$(wc -l < "$output_file")
-        ui_step_start "Nuclei Fuzzer Results" ""
+        ui_step_start "Nuclei DAST (Fuzzing) Results" ""
         ui_print_result_item "Fuzzing Findings" "$output_file" "$count"
         ui_step_end
     fi
@@ -38,7 +38,7 @@ auto_nuclei(){
 
     if [[ ! -e "$output_file" || "$rerun" == true ]]; then
         ui_step_start "Nuclei Automatic Scan" "nuclei -l $input_file $nuclei_flags -resume -as -silent"
-        nuclei -l "$input_file" $nuclei_flags -resume -as -silent | anew "$output_file"
+        nuclei -l "$input_file" $nuclei_flags -resume -as -silent 2>$ERR_LOG | anew "$output_file"
         ui_step_end
     fi
 
@@ -61,7 +61,7 @@ full_nuclei(){
 
     if [[ ! -e "$output_file" || "$rerun" == true ]]; then
         ui_step_start "Nuclei Full Scan" "nuclei -l $input_file $nuclei_flags -resume -silent"
-        nuclei -l "$input_file" $nuclei_flags -resume -silent | anew "$output_file"
+        nuclei -l "$input_file" $nuclei_flags -resume -silent 2>$ERR_LOG | anew "$output_file"
         ui_step_end
     fi
 
@@ -69,29 +69,6 @@ full_nuclei(){
         local count=$(wc -l < "$output_file")
         ui_step_start "Full Nuclei Results" ""
         ui_print_result_item "Vulnerabilities" "$output_file" "$count"
-        ui_step_end
-    fi
-}
-
-xsscan(){
-    local input_file="$enumscan/URLs/paramurl.txt"
-    local output_file="$enumscan/xss_results.txt"
-
-    if [ ! -s "$input_file" ]; then
-        ui_print_warning "Skipping XSS Scan: $input_file is empty or missing."
-        return 1
-    fi
-
-    if [[ ! -e "$output_file" || "$rerun" == true ]]; then
-        ui_step_start "XSS Scan (Dalfox)" "cat $input_file | dalfox pipe -o $output_file"
-        cat "$input_file" | dalfox pipe --silent -o "$output_file"
-        ui_step_end
-    fi
-
-    if [ -s "$output_file" ]; then
-        local count=$(wc -l < "$output_file")
-        ui_step_start "XSS Scan Results" ""
-        ui_print_result_item "XSS Findings" "$output_file" "$count"
         ui_step_end
     fi
 }
@@ -104,18 +81,15 @@ function enumVuln(){
         nuclei_fuzzer
     fi
 
+    # This does not make sense, We've our own tech-detect engine
     # Auto Nuclei
-    if [[ "$vuln" == true || "$all" == true ]]; then
-        auto_nuclei
-    fi
+    # if [[ "$vuln" == true || "$all" == true ]]; then
+    #     auto_nuclei
+    # fi
 
     # Full Nuclei
     if [[ "$all" == true ]]; then
         full_nuclei
     fi
 
-    # XSS Scan
-    if [[ "$vuln" == true || "$all" == true ]]; then
-        xsscan
-    fi
 }
