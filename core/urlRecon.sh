@@ -8,18 +8,30 @@ recon_url(){
     trap 'ui_handle_sigint' SIGINT
     mkdir -p "$enumscan/URLs"
 
+    # Use project dir for sort temp files to avoid filling up /tmp (tmpfs)
+    local SORT_TEMP="$enumscan/URLs/.sort_tmp"
+    mkdir -p "$SORT_TEMP"
+    export SORT_TEMP
+
     ui_print_header "URL Reconnaissance" "Passive & Active Enumeration + JS Analysis"
 
     # --- Worker Functions (Silent) ---
     passivereconurl(){
         # Extract subdomains
         if [ ! -e "$urlprobedsd" ] || [ "$rerun" == true ]; then 
-            cat "$urlprobed" | awk -F[/:] '{print $4}' | sort -u | anew -q "$urlprobedsd" 2>$ERR_LOG
+            cat "$urlprobed" | awk -F[/:] '{print $4}' | sort -T "$SORT_TEMP" -u | anew -q "$urlprobedsd" 2>$ERR_LOG
         fi
         
-        # Gau - Passive Recon
+        # Gau - Passive Recon (on probed subdomains)
         if [ ! -e "$enumscan/URLs/gau-allurls.txt" ] || [ "$rerun" == true ]; then
             cat "$urlprobedsd" | gau 2>$ERR_LOG | anew -q "$enumscan/URLs/gau-allurls.txt"
+        fi
+
+        # Gau - Passive Recon (on root domain/list)
+        if [ -f "$domain" ]; then
+            cat "$domain" | gau 2>$ERR_LOG | anew -q "$enumscan/URLs/gau-allurls.txt"
+        else
+            echo "$domain" | gau 2>$ERR_LOG | anew -q "$enumscan/URLs/gau-allurls.txt"
         fi
         
         # Subjs - Passive Recon
@@ -35,8 +47,10 @@ recon_url(){
     }
 
     pot_url(){
-        ([ ! -e "$enumscan/URLs/potentialurls.txt" ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | gf excludeExt 2>$ERR_LOG | anew -q "$enumscan/URLs/potentialurls.txt"
-        ([ ! -e "$enumscan/URLs/paramurl.txt" ] || [ "$rerun" == true ]) && cat "$enumscan/URLs/potentialurls.txt" | qsinject -c "$MISC_DIR/qs-rules.yaml" 2>$ERR_LOG | anew -q "$enumscan/URLs/paramurl.txt"
+        ([ ! -e "$enumscan/URLs/potential-urls.txt" ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | gf excludeExt 2>$ERR_LOG | anew -q "$enumscan/URLs/potential-urls.txt"
+        ([ ! -e "$enumscan/URLs/qsinjected-urls.txt" ] || [ "$rerun" == true ]) && cat "$enumscan/URLs/potential-urls.txt" | qsinject -c "$MISC_DIR/qs-rules.yaml" 2>$ERR_LOG | anew -q "$enumscan/URLs/qsinjected-urls.txt"
+        ([ ! -e "$enumscan/URLs/uro-urls.txt" ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | uro 2>$ERR_LOG | anew -q "$enumscan/URLs/uro-urls.txt"
+        ([ ! -e "$enumscan/URLs/uro-param-urls.txt" ] || [ "$rerun" == true ]) && cat $enumscan/URLs/*-allurls.txt | uro -f hasparams -b js json 2>$ERR_LOG | anew -q "$enumscan/URLs/uro-param-urls.txt"
     }
 
     jsextractor(){
@@ -61,17 +75,17 @@ recon_url(){
         fi
 
         # Parse Secrets
-        grep "\[" "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" | sort -u | anew -q "$enumscan/URLs/secretsfromjs.txt"
+        grep "\[" "$enumscan/URLs/JSLeak/jsleak_secret_output.txt" | sort -T "$SORT_TEMP" -u | anew -q "$enumscan/URLs/secretsfromjs.txt"
  
         # Parse Endpoints
-        cat "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -u | anew -q "$enumscan/URLs/endpointsfromjs.txt"
+        cat "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -T "$SORT_TEMP" -u | anew -q "$enumscan/URLs/endpointsfromjs.txt"
 
         # Extract links from JSLeak and validate with httpx
         if [ -s "$enumscan/URLs/JSLeak/jsleak_link_output.txt" ]; then
             # Format: [+] Found link: [URL] in [FILE]
             # Extract content of first brackets
             local jsleak_raw_links="/tmp/jsleak_raw_links.txt"
-            sed -n 's/.*Found link: \[\([^]]*\)\].*/\1/p' "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -u > "$jsleak_raw_links"
+            sed -n 's/.*Found link: \[\([^]]*\)\].*/\1/p' "$enumscan/URLs/JSLeak/jsleak_link_output.txt" | sort -T "$SORT_TEMP" -u > "$jsleak_raw_links"
             
             # Filter full URLs and relative paths
             local jsleak_js_links="/tmp/jsleak_js_links.txt"
@@ -129,14 +143,17 @@ recon_url(){
         gau_count=$(wc -l < "$enumscan/URLs/gau-allurls.txt" 2>/dev/null || echo 0)
         subjs_count=$(wc -l < "$enumscan/URLs/subjs-allurls.txt" 2>/dev/null || echo 0)
         katana_count=$(wc -l < "$enumscan/URLs/katana-allurls.txt" 2>/dev/null || echo 0)
-        total_urls=$(cat $enumscan/URLs/*-allurls.txt 2>/dev/null | sort -u | wc -l)
+        total_urls=$(cat $enumscan/URLs/*-allurls.txt 2>/dev/null | sort -T "$SORT_TEMP" -u | wc -l)
 
         ui_print_result_item "Gau (Passive)" "$enumscan/URLs/gau-allurls.txt" "$gau_count"
         ui_print_result_item "Subjs (Passive)" "$enumscan/URLs/subjs-allurls.txt" "$subjs_count"
         ui_print_result_item "Katana (Active)" "$enumscan/URLs/katana-allurls.txt" "$katana_count"
-        ui_print_result_item "Total Unique URLs" "$enumscan/URLs/potentialurls.txt" "$total_urls"
+        ui_print_result_item "Total Unique URLs" "$enumscan/URLs/potential-urls.txt" "$total_urls"
         
         ui_step_end
+
+        # XNL Deep Enumeration (Separate UI Step)
+        [[ ("$enumxnl" == true || "$all" == true) && ! -f "$domain" ]] && xnl
     fi
 
     # --- Phase 2: Processing & Filtering ---
@@ -148,22 +165,26 @@ recon_url(){
         ui_print_cmd "${SYM_INFO} qsinject (Param Discovery)"
         ui_print_cmd "${SYM_INFO} grep .js (JS Extraction)"
         
+        # Recalculate total including XNL findings before processing
+        total_urls=$(cat $enumscan/URLs/*-allurls.txt 2>/dev/null | sort -T "$SORT_TEMP" -u | wc -l)
         ui_start_spinner "Processing $total_urls URLs"
-
-        jsextractor
+        
         pot_url
+        jsextractor
         validjsurlextractor
         
         ui_stop_spinner
 
         js_count=$(wc -l < "$enumscan/URLs/alljsurls.txt" 2>/dev/null || echo 0)
-        pot_count=$(wc -l < "$enumscan/URLs/potentialurls.txt" 2>/dev/null || echo 0)
-        param_count=$(wc -l < "$enumscan/URLs/paramurl.txt" 2>/dev/null || echo 0)
+        pot_count=$(wc -l < "$enumscan/URLs/potential-urls.txt" 2>/dev/null || echo 0)
+        param_count=$(wc -l < "$enumscan/URLs/qsinjected-urls.txt" 2>/dev/null || echo 0)
         valid_js_count=$(wc -l < "$enumscan/URLs/validjsurls.txt" 2>/dev/null || echo 0)
+        uro_param_count=$(wc -l < "$enumscan/URLs/uro-param-urls.txt" 2>/dev/null || echo 0)
 
         ui_print_result_item "All JS URLs" "$enumscan/URLs/alljsurls.txt" "$js_count"
-        ui_print_result_item "Potential URLs" "$enumscan/URLs/potentialurls.txt" "$pot_count"
-        ui_print_result_item "Param URLs" "$enumscan/URLs/paramurl.txt" "$param_count"
+        ui_print_result_item "Potential URLs" "$enumscan/URLs/potential-urls.txt" "$pot_count"
+        ui_print_result_item "Uro Param URLs" "$enumscan/URLs/uro-param-urls.txt" "$uro_param_count"
+        ui_print_result_item "Param URLs (qsinject)" "$enumscan/URLs/qsinjected-urls.txt" "$param_count"
         ui_print_result_item "Valid JS (200)" "$enumscan/URLs/validjsurls.txt" "$valid_js_count"
         
         ui_step_end
@@ -232,7 +253,7 @@ xnl(){
     
     # Define commands for display
     local waymore_cmd="waymore -i $domain -mode B -oU $enumscan/URLs/waymore.txt -oR $enumscan/URLs/waymoreResponses/"
-    local xnl_cmd="xnLinkFinder -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o $enumscan/URLs/xnLinkFinder_links.txt -op $enumscan/URLs/xnLinkFinder_parameters.txt -owl $enumscan/URLs/xnLinkFinder_wordlist.txt"
+    local xnl_cmd="xnLinkFinder -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o $enumscan/URLs/xnLinkFinder-allurls.txt -op $enumscan/URLs/xnLinkFinder_parameters.txt -owl $enumscan/URLs/xnLinkFinder_wordlist.txt"
     local hog_cmd="trufflehog filesystem $enumscan/URLs/waymoreResponses --only-verified"
 
     # Print all commands upfront (or as they run? user asked for upfront or indented under [#] Command)
@@ -256,13 +277,14 @@ xnl(){
     
     # 2. xnLinkFinder
     if [ -d "$enumscan/URLs/waymoreResponses" ]; then
-        if [ ! -f "$enumscan/URLs/xnLinkFinder_links.txt" ] || [ "$rerun" == true ]; then
+        if [ ! -f "$enumscan/URLs/xnLinkFinder-allurls.txt" ] || [ "$rerun" == true ]; then
             ui_start_spinner "Running xnLinkFinder on Responses"
-            xnLinkFinder -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o $enumscan/URLs/xnLinkFinder_links.txt -op $enumscan/URLs/xnLinkFinder_parameters.txt -owl $enumscan/URLs/xnLinkFinder_wordlist.txt >/dev/null 2>&1
+            [ ! -f "$urlprobed" ] && touch "$urlprobed"
+            xnLinkFinder -i $enumscan/URLs/waymoreResponses/ -sp $urlprobed -sf $domain -o $enumscan/URLs/xnLinkFinder-allurls.txt -op $enumscan/URLs/xnLinkFinder_parameters.txt -owl $enumscan/URLs/xnLinkFinder_wordlist.txt >/dev/null 2>&1
             ui_stop_spinner
         fi
     fi
-    local xnl_links=$(wc -l < "$enumscan/URLs/xnLinkFinder_links.txt" 2>/dev/null || echo 0)
+    local xnl_links=$(wc -l < "$enumscan/URLs/xnLinkFinder-allurls.txt" 2>/dev/null || echo 0)
     
     # 3. Trufflehog
     if [ -d "$enumscan/URLs/waymoreResponses" ]; then
@@ -275,7 +297,7 @@ xnl(){
     local hog_cnt=$(wc -l < "$enumscan/URLs/trufflehog-results.txt" 2>/dev/null || echo 0)
 
     ui_print_result_item "Waymore URLs" "$enumscan/URLs/waymore.txt" "$waymore_cnt"
-    ui_print_result_item "xnLinkFinder Links" "$enumscan/URLs/xnLinkFinder_links.txt" "$xnl_links"
+    ui_print_result_item "xnLinkFinder Links" "$enumscan/URLs/xnLinkFinder-allurls.txt" "$xnl_links"
     ui_print_result_item "Trufflehog Secrets" "$enumscan/URLs/trufflehog-results.txt" "$hog_cnt"
     
     ui_step_end
